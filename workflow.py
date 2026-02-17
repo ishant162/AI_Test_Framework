@@ -5,7 +5,7 @@ from nodes.workflow_nodes import (
     pass_analysis,
     failure_analysis,
     execution_layer,
-    tool_node,
+    tools_and_capture,
     route_after_analysis,
     route_after_execution
 )
@@ -22,11 +22,10 @@ def create_workflow():
     workflow.add_node("pass_analysis", pass_analysis)
     workflow.add_node("failure_analysis", failure_analysis)
     workflow.add_node("execution_layer", execution_layer)
-    workflow.add_node("tools", tool_node)
+    workflow.add_node("tools", tools_and_capture)   
     
     # Set entry point
     workflow.set_entry_point("framework_log_analysis")
-    
     # Add conditional edges
     workflow.add_conditional_edges(
         "framework_log_analysis",
@@ -36,13 +35,10 @@ def create_workflow():
             "failure_analysis": "failure_analysis"
         }
     )
-    
     # Pass analysis goes to end
     workflow.add_edge("pass_analysis", END)
-    
     # Failure analysis goes to execution layer
     workflow.add_edge("failure_analysis", "execution_layer")
-    
     # Execution layer conditional routing
     workflow.add_conditional_edges(
         "execution_layer",
@@ -52,10 +48,9 @@ def create_workflow():
             "end": END
         }
     )
-    
     # Tools go back to end
     workflow.add_edge("tools", END)
-    
+
     # Compile
     app = workflow.compile()
     
@@ -93,11 +88,5 @@ if __name__ == "__main__":
     
     result = app.invoke(initial_state)
     
-    print("\n=== WORKFLOW RESULT ===")
-    print(f"\nTest Status: {result.get('test_status')}")
-    if result.get('summary_report'):
-        print(f"\nSummary Report:\n{result['summary_report']}")
-    if result.get('failure_report'):
-        print(f"\nFailure Report:\n{result['failure_report']}")
-    if result.get('action_plan'):
-        print(f"\nAction Plan:\n{result['action_plan']}")
+    if result.get('jira_tickets'):
+        print(f"\njira_tickets:\n{result['jira_tickets']}")

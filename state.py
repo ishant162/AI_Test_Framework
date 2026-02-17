@@ -1,4 +1,7 @@
-from typing import TypedDict, Literal, List, Dict, Optional
+from typing import TypedDict, Literal, List, Dict, Optional, Annotated
+from langgraph.graph.message import add_messages
+from langchain_core.messages import BaseMessage
+
 
 
 class TestLogState(TypedDict):
@@ -20,4 +23,4 @@ class TestLogState(TypedDict):
     jira_tickets: Optional[List[Dict[str, str]]]
     
     # Messages for LLM
-    messages: List[Dict[str, str]]
+    messages: Annotated[List[BaseMessage], add_messages]

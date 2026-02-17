@@ -1,10 +1,18 @@
+import json
+import os
+from typing import Dict, List, Any
+from dotenv import load_dotenv
+
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.prebuilt import ToolNode
+from langchain_core.messages import ToolMessage
 from state import TestLogState
 from tools.jira_tool import jira_tools
 
-api_key = ""
+load_dotenv()
+
+api_key = os.environ['API_KEY']
 
 # Initialize LLM
 llm = ChatOpenAI(
@@ -114,38 +122,37 @@ def failure_analysis(state: TestLogState) -> TestLogState:
 
 def execution_layer(state: TestLogState) -> TestLogState:
     """Plan actions and use tools to create Jira tickets"""
+
+    prompt = f"""
+        Based on the following failed tests, create Jira tickets for each failure.
+        Use the available create_jira_ticket TOOLS to create jira tickets for failed
+        testcases.
+
+        Failed Test Cases:
+        {chr(10).join(state['failed_testcases']) if state.get('failed_testcases') else 'None'}
+
+        Failure Report:
+        {state.get('failure_report', '')}
+
+        For each failed test, call the create_jira_ticket tool with:
+        - summary: Brief issue summary
+        - description: Detailed failure description
+        - testcase_name: The test case name
+
+        Create tickets now.
+    """
     
-    prompt = f"""Based on the following failed tests, create Jira tickets for each failure.
-
-    Failed Test Cases:
-    {chr(10).join(state['failed_testcases']) if state['failed_testcases'] else 'None'}
-
-    Failure Report:
-    {state['failure_report']}
-
-    For each failed test, call the create_jira_ticket tool with:
-    - summary: Brief issue summary
-    - description: Detailed failure description
-    - testcase_name: The test case name
-
-    Create tickets now."""
-
-    messages = [
-        SystemMessage(content="You are creating Jira tickets for failed test cases. Use the create_jira_ticket tool for each failed test."),
-        HumanMessage(content=prompt)
-    ]
     
-    response = llm_with_tools.invoke(messages)
-    state['messages'] = [{"role": "user", "content": prompt}, {"role": "assistant", "content": str(response)}]
-    
-    # Store the LLM response that may contain tool calls
-    state['action_plan'] = str(response.content) if hasattr(response, 'content') else str(response)
-    
+    sys_msg = SystemMessage(content="You are creating Jira tickets for failed test cases. Use the create_jira_ticket tool for each failed test.")
+    human_msg = HumanMessage(content=prompt)
+
+    prior = state.get("messages", []) or []
+    response = llm_with_tools.invoke(prior + [sys_msg, human_msg])
+
+    # Explicitly set messages as BaseMessage objects (not dicts)
+    state["messages"] = prior + [sys_msg, human_msg, response]
+    state["action_plan"] = getattr(response, "content", str(response))
     return state
-
-
-# Tool node for Jira
-tool_node = ToolNode(jira_tools)
 
 
 def route_after_analysis(state: TestLogState) -> str:
@@ -158,9 +165,39 @@ def route_after_analysis(state: TestLogState) -> str:
 
 def route_after_execution(state: TestLogState) -> str:
     """Check if tools need to be called"""
-    last_message = state['messages'][-1] if state['messages'] else {}
-    
-    # Check if the last message has tool calls
-    if isinstance(last_message, dict) and 'tool_calls' in str(last_message):
+    last = state["messages"][-1]
+    if isinstance(last, AIMessage) and getattr(last, "tool_calls", None):
         return "tools"
     return "end"
+
+
+# Tool node for Jira
+tool_node = ToolNode(jira_tools)
+
+
+def _safe_to_dict(content: Any) -> Dict[str, Any]:
+    """Convert tool call response content to dict"""
+    if isinstance(content, dict):
+        return content
+    if isinstance(content, str):
+        try:
+            return json.loads(content)
+        except Exception:
+            return {"raw": content}
+    # Fallback if something exotic comes back
+    return {"raw": str(content)}
+
+def tools_and_capture(state: TestLogState) -> Dict[str, Any]:
+    update = tool_node.invoke(state)
+
+    # 2) Capture outputs from ToolMessages that came back in this update
+    jira_results: List[Dict[str, Any]] = []
+    for msg in update.get("messages", []):
+        if isinstance(msg, ToolMessage) and getattr(msg, "name", None) == "create_jira_ticket":
+            jira_results.append(_safe_to_dict(msg.content))
+
+    # 3) If we found any, also return them as a state update
+    if jira_results:
+        update["jira_tickets"] = jira_results
+
+    return update
