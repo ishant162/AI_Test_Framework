@@ -28,19 +28,43 @@ def framework_log_analysis(state: TestLogState) -> TestLogState:
     """Analyze test framework logs to determine pass/fail status"""
     
     prompt = f"""
-    Analyze the following test framework log and determine if all test cases passed or if any failed.
-
-    Test Log:
-    {state['log_content']}
-
-    Respond with:
-    1. Overall status: "PASSED" or "FAILED"
-    2. If failed, list the names of failed test cases
-
-    Format your response clearly."""
+    <LOG>
+        {state['log_content']}
+    </LOG>
+    """
 
     messages = [
-        SystemMessage(content="You are a test automation expert analyzing test framework logs."),
+        SystemMessage(
+            content="""
+                You are a log analyst. Your job is to determine test results from raw logs and return ONLY a strict JSON object.
+                Decision rules (apply in order):
+                1) If a “TEST EXECUTION SUMMARY” block with totals is present, trust it:
+                - Parse “Total test cases:”, “Passed:”, “Failed:”, and “Pass rate:”.
+                - overall_status = "ALL_PASSED" if Failed == 0 and Passed == Total; else "SOME_FAILED".
+                2) If the summary block is missing, compute from per-test lines:
+                - Parse only lines like: "Test case <NAME>: PASSED|FAILED|SKIPPED".
+                - Ignore unrelated PASSED/FAILED occurrences such as “Output validation PASSED”.
+                - total = number of unique <NAME>.
+                - passed = count with PASSED; failed = count with FAILED; pass_rate = (passed/total)*100 rounded to 2 decimals.
+                - overall_status = "ALL_PASSED" if failed == 0 and passed == total; else "SOME_FAILED".
+                3) If neither summary nor per-test lines are present, return overall_status="UNKNOWN" with reason.
+
+                Output schema (STRICT JSON, no extra text):
+                {
+                "overall_status": "ALL_PASSED" | "SOME_FAILED" | "UNKNOWN",
+                "total": number | null,
+                "passed": number | null,
+                "failed": number | null,
+                "pass_rate": number | null,
+                "failed_tests": string[],            // e.g., ["TC_3", "Login_Edge_01"]
+                "per_test": { [testName: string]: "PASSED" | "FAILED" | "SKIPPED" },  // optional when summary exists
+                "notes": string                      // brief explanation of which rule was used
+                }
+
+                Be tolerant to capitalization and spacing. Treat repeated lines as duplicates and prefer the last summary if multiple appear. If counts are inconsistent, prefer the latest summary; otherwise compute from per-test lines and note the discrepancy.
+
+                Now analyze the logs between <LOG> ... </LOG> and return ONLY the JSON object.
+            """),
         HumanMessage(content=prompt)
     ]
     
@@ -48,18 +72,14 @@ def framework_log_analysis(state: TestLogState) -> TestLogState:
     
     # Parse response to determine status
     response_text = response.content.lower()
-    if "overall status: \"passed\"" in response_text or "overall status: passed" in response_text:
+    response_json = json.loads(response_text)
+    if response_json['overall_status'] == "all_passed":
         status = "passed"
         failed_tests = []
     else:
         status = "failed"
         # Extract failed test cases (simplified parsing)
-        failed_tests = []
-        lines = response.content.split('\n')
-        for line in lines:
-            if 'failed' in line.lower() and ('test' in line.lower() or 'case' in line.lower()):
-                # Basic extraction - can be improved
-                failed_tests.append(line.strip())
+        failed_tests = response_json.get('failed_tests')
     
     state['test_status'] = status
     state['failed_testcases'] = failed_tests if failed_tests else None

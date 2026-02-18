@@ -62,17 +62,8 @@ if __name__ == "__main__":
     app = create_workflow()
     
     # Sample test log
-    sample_log = """
-    Test Execution Report
-    =====================
-    test_login_success: PASSED
-    test_login_invalid_credentials: PASSED
-    test_checkout_process: FAILED - NullPointerException at line 45
-    test_payment_gateway: FAILED - Connection timeout
-    test_user_registration: PASSED
-    
-    Total: 5 tests, 3 passed, 2 failed
-    """
+    with open("./data/test_framework_fail.log", "r") as f:
+        sample_log = f.read()
     
     # Run workflow
     initial_state = {
@@ -88,5 +79,8 @@ if __name__ == "__main__":
     
     result = app.invoke(initial_state)
     
-    if result.get('jira_tickets'):
+    if result.get('summary_report', ""):
+        print(f"\nSummary report:\n{result['summary_report']}")
+    
+    if result.get('jira_tickets', []):
         print(f"\njira_tickets:\n{result['jira_tickets']}")
