@@ -117,10 +117,11 @@ def analyze_logs(log_text: str):
 {failed_md}
 """
 
+        # Success Report (renamed from Summary Report)
         summary_md = (
-            f"### 📄 Summary Report\n{summary}"
+            f"### ✅ Success Report\n{summary}"
             if summary else
-            "### 📄 Summary Report\n✔ No Summary Report Generated"
+            "### ✅ Success Report\n✔ No Success Report Generated"
         )
 
         failure_md = (
@@ -142,6 +143,38 @@ def analyze_logs(log_text: str):
             "",
         )
 
+# ---- Wrapper to support optional file input (kept minimal) ----
+def analyze_logs_from_inputs(log_text: str, log_file):
+    """
+    If a file is uploaded, its contents take precedence over the textbox.
+    Otherwise, use the textbox content as-is.
+    """
+    try:
+        if log_file is not None:
+            # gr.File with type='binary' returns bytes
+            if isinstance(log_file, bytes):
+                content = log_file.decode("utf-8", errors="ignore")
+            else:
+                # Some gradio versions pass a dict-like or tempfile; attempt .read()
+                try:
+                    content = log_file.read().decode("utf-8", errors="ignore")
+                except Exception:
+                    # Fallback: treat as str path
+                    path = str(log_file)
+                    with open(path, "rb") as f:
+                        content = f.read().decode("utf-8", errors="ignore")
+        else:
+            content = log_text or ""
+
+        return analyze_logs(content)
+    except Exception:
+        return (
+            f"❌ Error reading uploaded file:\n```\n{traceback.format_exc()}\n```",
+            "",
+            "",
+            "",
+        )
+
 # ------------------- UI -------------------
 with gr.Blocks() as demo:
 
@@ -149,27 +182,49 @@ with gr.Blocks() as demo:
 
     with gr.Group():
         log_input = gr.Textbox(label="Paste Test Logs", lines=6)
+        # File attachment input
+        log_file = gr.File(label="Or upload a log file (.txt/.log)", file_types=[".txt", ".log"], type="binary")
 
         with gr.Row():
             run_btn = gr.Button("🚀 Generate Analysis", variant="primary")
-            failed_sample_btn = gr.Button("📋 Use Failed Sample")
-            passed_sample_btn = gr.Button("📗 Use Passed Sample")
+            # Sample buttons removed per request
 
-    with gr.Tabs():
-        with gr.Tab("Status"): status_out = gr.Markdown()
-        with gr.Tab("Summary Report"): summary_out = gr.Markdown()
-        with gr.Tab("Failure Report"): failure_out = gr.Markdown()
-        with gr.Tab("Jira Tickets"): jira_msg_out = gr.Markdown()
+    # Wrap analysis area with an element ID so we can scroll to it
+    with gr.Column(elem_id="analysis_section"):
+        with gr.Tabs():
+            with gr.Tab("Status"): status_out = gr.Markdown()
+            with gr.Tab("Success Report"): summary_out = gr.Markdown()
+            with gr.Tab("Failure Report"): failure_out = gr.Markdown()
+            with gr.Tab("Jira Tickets"): jira_msg_out = gr.Markdown()
 
-    def disable_button(): return gr.update(value="⏳ Processing...", interactive=False)
-    def enable_button(): return gr.update(value="🚀 Generate Analysis", interactive=True)
+    def disable_button(): 
+        return gr.update(value="⏳ Processing...", interactive=False)
+
+    def enable_button(): 
+        return gr.update(value="🚀 Generate Analysis", interactive=True)
+
+    # After analysis, clear the uploaded file input
+    def reset_file_input():
+        return gr.update(value=None)
 
     run_btn.click(disable_button, None, [run_btn]).then(
-        analyze_logs, [log_input],
+        analyze_logs_from_inputs, [log_input, log_file],
         [status_out, summary_out, failure_out, jira_msg_out]
-    ).then(enable_button, None, [run_btn])
-
-    failed_sample_btn.click(load_failed_sample, outputs=log_input)
-    passed_sample_btn.click(load_passed_sample, outputs=log_input)
+    ).then(
+        reset_file_input, None, [log_file]
+    ).then(
+        enable_button, None, [run_btn]
+    ).then(
+        # NEW: Smoothly scroll to the analysis section after everything completes
+        None, None, None,
+        js="""
+() => {
+  const el = document.getElementById('analysis_section');
+  if (el && el.scrollIntoView) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+"""
+    )
 
 demo.launch(server_name="localhost", server_port=7860, theme=gr.themes.Soft())
