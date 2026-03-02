@@ -64,6 +64,16 @@ if __name__ == "__main__":
     # Sample test log
     with open("./data/test_framework_fail.log", "r") as f:
         sample_log = f.read()
+
+    
+    # sample_log = """
+    # [2024-06-01 10:23:44] TESTCASE: test_login FAILED
+    # Error: Timeout waiting for response
+    # Stacktrace: file.py line 22
+    # ------------------------------------------------
+    # [2024-06-01 10:23:50] TESTCASE: test_signup PASSED
+    # """
+
     
     # Run workflow
     initial_state = {
