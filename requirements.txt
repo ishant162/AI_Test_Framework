@@ -4,3 +4,9 @@ langchain-openai
 langchain-core
 python-dotenv
 gradio
+jira
+drain3
+sentence-transformers
+chromadb
+langchain-community
+regex
