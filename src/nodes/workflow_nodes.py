@@ -7,8 +7,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import ToolMessage
-from state import TestLogState
-from tools.jira_tool import jira_tools
+from src.state.state import TestLogState
+from src.tools.jira_tool import jira_tools
 
 load_dotenv()
 
