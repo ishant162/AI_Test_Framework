@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, END
-from state import TestLogState
-from nodes.workflow_nodes import (
+from src.state.state import TestLogState
+from src.nodes.workflow_nodes import (
     framework_log_analysis,
     pass_analysis,
     failure_analysis,
