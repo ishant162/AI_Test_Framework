@@ -1,27 +1,12 @@
 import json
-import os
 from typing import Dict, List, Any
-from dotenv import load_dotenv
 
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import ToolMessage
-from state import TestLogState
-from tools.jira_tool import jira_tools
-
-load_dotenv()
-
-api_key = os.environ['API_KEY']
-
-# Initialize LLM
-llm = ChatOpenAI(
-    model="openai.gpt-5.1",  # Specify the OpenAI model you want to use
-    base_url="https://openai.generative.engine.capgemini.com/v1",
-    api_key=api_key,
-    default_headers={"x-api-key": api_key}  # Some implementations require this header
-)
-llm_with_tools = llm.bind_tools(jira_tools)
+from src.state.state import TestLogState
+from src.tools.jira_tool import jira_tools
+from src.llm.gen_engine_llm import llm
 
 
 def framework_log_analysis(state: TestLogState) -> TestLogState:
@@ -142,6 +127,8 @@ def failure_analysis(state: TestLogState) -> TestLogState:
 
 def execution_layer(state: TestLogState) -> TestLogState:
     """Plan actions and use tools to create Jira tickets"""
+
+    llm_with_tools = llm.bind_tools(jira_tools)
 
     prompt = f"""
         Based on the following failed tests, create Jira tickets for each failure.
