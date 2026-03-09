@@ -1,52 +1,9 @@
-from typing import List, Dict, Any, Optional, TypedDict
+import json
+
 from langgraph.graph import StateGraph, END
-from tools.log_parser import LogParser
+from src.state.state import ContextBuilderState
+from src.nodes.context_workflow_nodes import llm_log_parsing_node, augmentation_node, vectorization_node
 
-# Define State for Context Builder
-class ContextBuilderState(TypedDict):
-    """State schema for the Context Builder workflow"""
-
-    log_content: str
-    custom_templates: Optional[List[Dict[str, str]]]
-
-    extracted_templates: Optional[List[Dict[str, Any]]]
-
-    augmented_data: Optional[List[Dict[str, Any]]]
-
-    vector_ids: Optional[List[str]]
-
-    messages: List[str]
-
-def log_parsing_node(state: ContextBuilderState) -> ContextBuilderState:
-    """Phase 01: Extract structural templates using Drain3"""
-    
-    log_lines = state['log_content'].split('\n')
-    parser = LogParser()
-    
-    # Apply custom templates if provided
-    if state.get('custom_templates'):
-        parser.add_custom_templates(state['custom_templates'])
-        
-    templates = parser.parse_logs(log_lines)
-    
-    state['extracted_templates'] = templates
-    state['messages'].append(f"Successfully extracted {len(templates)} unique templates.")
-    
-    return state
-
-def augmentation_node(state: ContextBuilderState) -> ContextBuilderState:
-    """Phase 02: LLM-based augmentation and domain knowledge injection (Placeholder)"""
-
-    #TODO: To be implemented in Phase 2
-    state['messages'].append("Phase 02: Augmentation started (Placeholder).")
-    return state
-
-def vectorization_node(state: ContextBuilderState) -> ContextBuilderState:
-    """Phase 03: Vectorization and storage in ChromaDB (Placeholder)"""
-
-    #TODO: To be implemented in Phase 3
-    state['messages'].append("Phase 03: Vectorization started (Placeholder).")
-    return state
 
 # Create the Context Builder Graph
 def create_context_builder_workflow():
@@ -55,15 +12,15 @@ def create_context_builder_workflow():
     workflow = StateGraph(ContextBuilderState)
     
     # Add nodes
-    workflow.add_node("log_parsing", log_parsing_node)
+    workflow.add_node("llm_log_parsing", llm_log_parsing_node)
     workflow.add_node("augmentation", augmentation_node)
     workflow.add_node("vectorization", vectorization_node)
     
     # Set entry point
-    workflow.set_entry_point("log_parsing")
+    workflow.set_entry_point("llm_log_parsing")
     
     # Add edges
-    workflow.add_edge("log_parsing", "augmentation")
+    workflow.add_edge("llm_log_parsing", "augmentation")
     workflow.add_edge("augmentation", "vectorization")
     workflow.add_edge("vectorization", END)
     
@@ -77,16 +34,148 @@ if __name__ == "__main__":
     app = create_context_builder_workflow()
     
     sample_logs = """
-    2023-10-01 10:00:01 INFO Connected to database at 192.168.1.1:5432
-    2023-10-01 10:00:02 INFO Connected to database at 192.168.1.2:5432
-    2023-10-01 10:00:05 ERROR User 123 failed login from 10.0.0.5
-    2023-10-01 10:00:10 WARN Disk usage at 90% on /dev/sda1
-    2023-10-01 10:00:15 WARN Disk usage at 95% on /dev/sdb1
+    [2010-04-24 07:51:54,393] DEBUG - [main] BulkOpsClient.main(): Execution begin.
+
+    [2010-04-24 07:51:54,393] DEBUG - [main] BulkOpsClient.main(): List of all 
+    configurations loaded: {numofthreads=1, impstatchkinterval=30, maxloginattempts=1, 
+    manifestfiledir=.\Manifest\, sessionkeepchkinterval=300, routingurl=https://
+    sso.crmondemand.com, hosturl=http://sdchs20n263.us.oracle.com, testmode=debug, 
+    maxthreadfailure=1, logintimeoutms=180000, csvblocksize=1000, maxsoapsize=10240}
+
+    [2010-04-24 07:51:54,393] DEBUG - [main] BulkOpsClient.main(): List of all options 
+    loaded: {password=*********, clientloglevel=detailed, waitforcompletion=False, 
+    datetimeformat=usa, importloglevel=errors, datafilepath=.\\data\\account1.csv, 
+    operation=insert, help=False, mapfilepath=.\\data\\account1.map, 
+    clientlogfiledir=., recordtype=account, duplicatecheckoption=externalid, 
+    username=oracle/oracle, csvdelimiter=,}
+
+    [2010-04-24 07:51:54,393]  INFO - [main] Attempting to log in...
+
+    [2010-04-24 07:51:55,081]  INFO - [main] Successfully logged in as: wchung/eric
+
+    [2010-04-24 07:51:55,081] DEBUG - [main] BulkOpsClient.doImport(): Execution begin.
+
+    [2010-04-24 07:51:55,081]  INFO - [main] Validating Oracle Data Loader On Demand 
+    Import request...
+
+    [2010-04-24 07:51:55,081] DEBUG - [main] FieldMappingManager.parseMappings(): 
+    Execution begin.
+
+    [2010-04-24 07:51:55,097] DEBUG - [main] FieldMappingManager.parseMappings(): 
+    Execution complete.
+
+    [2010-04-24 07:51:55,331] DEBUG - [Thread-1] ODWSSessionKeeperThread.Run(): 
+    Submitting BulkOpImportGetRequestDetail WS call
+
+    [2010-04-24 07:51:55,331]  INFO - [main] A SOAP request was sent to the server to 
+    create the import request.
+
+    [2010-04-24 07:51:55,862] DEBUG - [Thread-1] 
+    SOAPImpRequestManager.sendImportGetRequestDetail(): SOAP request sent successfully 
+    and a response was received
+
+    [2010-04-24 07:51:55,862] DEBUG - [Thread-1] ODWSSessionKeeperThread.Run(): 
+    BulkOpImportGetRequestDetail WS call finished
+
+    [2010-04-24 07:51:55,862] DEBUG - [Thread-1] ODWSSessionKeeperThread.Run(): SOAP 
+    response status code=OK
+
+    [2010-04-24 07:51:55,862] DEBUG - [Thread-1] ODWSSessionKeeperThread.Run(): Going 
+    to sleep for 300 seconds.
+
+    [2010-04-24 07:51:55,862] DEBUG - [main] 
+    SOAPImpRequestManager.handleSoapFaultException(): Handling SoapFaultException.
+
+    [2010-04-24 07:51:55,862] DEBUG - [main] There was an error sending the SOAP request 
+    to web service: SBL-ODU-01005
+
+    [2010-04-24 07:51:55,862] DEBUG - [main] BulkOpsClient.sendValidationRequest(): 
+    Experienced SOAP Request Rate Limit error while sending the validation request.  Will 
+    try to send again in 1 sec.
+
+    [2010-04-24 07:51:56,862]  INFO - [main] A SOAP request was sent to the server to 
+    create the import request.
+
+    [2010-04-24 07:52:01,268]  INFO - [main] A response to the SOAP request sent to 
+    create the import request on the server has been received.
+
+    [2010-04-24 07:52:01,268] DEBUG - [main] 
+    SOAPImpRequestManager.sendImportCreateRequest(): SOAP request sent successfully and 
+    a response was received
+
+    [2010-04-24 07:52:01,268]  INFO - [main] Oracle Data Loader On Demand Import 
+    validation PASSED.
+
+    [2010-04-24 07:52:01,268] DEBUG - [main] BulkOpsClient.sendValidationRequest(): 
+    Execution complete.
+
+    [2010-04-24 07:52:01,268] DEBUG - [main] BulkOpsClient.submitImportRequest(): 
+    Execution begin.
+
+    [2010-04-24 07:52:01,268] DEBUG - [main] BulkOpsClient.submitImportRequest(): 
+    Sending CSV Data Segments.
+
+    [2010-04-24 07:52:01,268] DEBUG - [main] CSVDataSender.CSVDataSender(): 
+    CSVDataSender will use 1 threads.
+
+    [2010-04-24 07:52:01,268]  INFO - [main] Submitting Oracle Data Loader On Demand 
+    Import request with the following Request Id: 1QA2-Q5NU1...
+
+    [2010-04-24 07:52:01,268] DEBUG - [main] CSVDataSender.sendCSVData(): Creating 
+    thread 0
+
+    [2010-04-24 07:52:01,284]  INFO - [main] Import Request Submission Status: Started
+
+    [2010-04-24 07:52:01,284] DEBUG - [main] CSVDataSender.sendCSVData(): Starting 
+    thread 0
+
+    [2010-04-24 07:52:01,284] DEBUG - [main] CSVDataSender.sendCSVData(): There are 
+    pending requests. Going to sleep.
+
+    [2010-04-24 07:52:01,284] DEBUG - [Thread-3] CSVDataSenderThread.run(): Thread 0 
+    submitting CSV Data Segment: 1 of 1
+
+    [2010-04-24 07:52:02,487]  INFO - [Thread-3] A response to the import data SOAP 
+    request sent to the server has been received.
+
+    [2010-04-24 07:52:02,487] DEBUG - [Thread-3] 
+    SOAPImpRequestManager.sendImportDataRequest(): SOAP request sent successfully and a 
+    response was received
+
+    [2010-04-24 07:52:02,487]  INFO - [Thread-3] A SOAP request containing import data 
+    was sent to the server: 1 of 1
+
+    [2010-04-24 07:52:02,487] DEBUG - [Thread-3] CSVDataSenderThread.run(): There is no 
+    more pending request to be picked up by Thread 0.
+
+    [2010-04-24 07:52:02,487] DEBUG - [Thread-3] CSVDataSenderThread.run(): Thread 0 
+    terminating now.
+
+    [2010-04-24 07:52:06,284]  INFO - [main] Import Request Submission Status: 100.00%
+
+    [2010-04-24 07:52:07,284]  INFO - [main] Oracle Data Loader On Demand Import 
+    submission completed succesfully.
+
+    [2010-04-24 07:52:07,284] DEBUG - [main] BulkOpsClient.submitImportRequest(): 
+    Execution complete.
+
+    [2010-04-24 07:52:07,300] DEBUG - [main] BulkOpsClient.doImport(): Execution 
+    complete.
+
+    [2010-04-24 07:52:07,300]  INFO - [main] Attempting to log out...
+
+    [2010-04-24 07:52:09,487]  INFO - [main] oracle/oracle is now logged out.
+
+    [2010-04-24 07:52:09,487] DEBUG - [Thread-1] ODWSSessionKeeperThread.Run(): 
+    Interrupted.
+
+    [2010-04-24 07:52:09,487] DEBUG - [main] BulkOpsClient.main(): Execution complete.
+
     """
     
     initial_state = {
         "log_content": sample_logs,
-        "custom_templates": [{"regex": r"User \d+ failed login", "label": "USER_LOGIN_FAILURE"}],
+        "parsing_guidance": "Focus on extracting database and authentication related patterns.",
         "extracted_templates": None,
         "augmented_data": None,
         "vector_ids": None,
@@ -100,6 +189,5 @@ if __name__ == "__main__":
         print(f"- {msg}")
         
     if result['extracted_templates']:
-        print("\nExtracted Templates:")
-        for t in result['extracted_templates']:
-            print(f"Source: {t['source']} | Template: {t['template']} | Count: {t['count']}")
+        print("\nExtracted Templates (LLM-Driven):")
+        print(json.dumps(result['extracted_templates'], indent=2))
