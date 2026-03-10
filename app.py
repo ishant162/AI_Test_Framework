@@ -1,7 +1,7 @@
 import gradio as gr
 import traceback
 import re
-from src.graph.workflow import create_workflow
+from src.graph.log_analysis_workflow import create_workflow
 
 app = create_workflow()
 
