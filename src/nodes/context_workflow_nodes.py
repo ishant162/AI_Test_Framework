@@ -1,9 +1,10 @@
+import json
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.llm.gen_engine_llm import llm
 from src.state.state import ContextBuilderState
 from src.utils.utils import extract_and_parse_json
-from config.context_building_prompts import template_extraction_prompt
+from config.context_building_prompts import template_extraction_prompt, template_enrichment_prompt
 
 
 # LLM Log Parsing Node
@@ -28,6 +29,11 @@ def llm_log_parsing_node(state: ContextBuilderState) -> ContextBuilderState:
         state['extracted_templates'] = []
         state['messages'].append("LLM failed to extract structured templates.")
 
+    # Domain annotator
+    state = domain_annotator_node(state)
+
+    # TODO: Add Human in the loop for SME
+
     return state
 
 def augmentation_node(state: ContextBuilderState) -> ContextBuilderState:
@@ -42,4 +48,31 @@ def vectorization_node(state: ContextBuilderState) -> ContextBuilderState:
 
     #TODO: To be implemented in Phase 3
     state['messages'].append("Phase 03: Vectorization started (Placeholder).")
+    return state
+
+def domain_annotator_node(state: ContextBuilderState) -> ContextBuilderState:
+    """Enrich extracted templates with severity, causality, summary, and variables"""
+
+    if not state.get('extracted_templates'):
+        state['messages'].append("Domain annotator skipped: no extracted templates found.")
+        return state
+
+    enrichment_user_prompt = (
+        f"Here are the extracted log templates to enrich:\n\n"
+        f"{json.dumps(state['extracted_templates'], indent=2)}"
+    )
+
+    response = llm.invoke([
+        SystemMessage(content=template_enrichment_prompt),
+        HumanMessage(content=enrichment_user_prompt)
+    ])
+
+    enriched_templates = extract_and_parse_json(response.content)
+
+    if enriched_templates and isinstance(enriched_templates, list):
+        state['extracted_templates'] = enriched_templates
+        state['messages'].append(f"Domain annotator successfully enriched {len(enriched_templates)} templates.")
+    else:
+        state['messages'].append("Domain annotator failed to enrich templates. Keeping original extracted templates.")
+
     return state
