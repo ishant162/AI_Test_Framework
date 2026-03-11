@@ -1,4 +1,6 @@
-# PROMPT 1: Template Extraction Only
+"""Context Building Prompt Module"""
+
+
 template_extraction_prompt = """
 You are an expert log analyst. Your task is to parse raw logs and extract unique structural templates.
 
@@ -22,7 +24,7 @@ Example output:
 ]
 """
 
-# PROMPT 2: Template Enrichment
+
 template_enrichment_prompt = """
 You are an expert log analyst. You will receive a list of extracted log templates and must enrich each one with semantic metadata.
 
@@ -30,7 +32,7 @@ For each template object, ADD the following fields (do not remove or modify exis
 1. severity: (INFO, WARN, ERROR, CRITICAL) — based on what the log pattern typically signals.
 2. causality: (Network, Auth, Database, Application, System) — the most likely system domain responsible.
 3. summary: A concise, human-readable explanation of what this log pattern means and why it occurs.
-4. variables: 2–3 representative examples of real variable values extracted from the timestamps metadata (e.g., what <USER_ID> or <IP> looked like in practice).
+4. variables: 2-3 representative examples of real variable values extracted from the timestamps metadata (e.g., what <USER_ID> or <IP> looked like in practice).
 
 Rules:
 - Return ALL original fields unchanged ("template", "timestamps").

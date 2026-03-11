@@ -1,3 +1,6 @@
+"""Main Entry Module"""
+
+
 import gradio as gr
 import traceback
 import re

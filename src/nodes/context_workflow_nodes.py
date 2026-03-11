@@ -1,3 +1,6 @@
+"""Context Builder Nodes Module"""
+
+
 import json
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -30,9 +33,7 @@ def llm_log_parsing_node(state: ContextBuilderState) -> ContextBuilderState:
         state['messages'].append("LLM failed to extract structured templates.")
 
     # Domain annotator
-    state = domain_annotator_node(state)
-
-    # TODO: Add Human in the loop for SME
+    state = domain_annotator(state)
 
     return state
 
@@ -50,7 +51,7 @@ def vectorization_node(state: ContextBuilderState) -> ContextBuilderState:
     state['messages'].append("Phase 03: Vectorization started (Placeholder).")
     return state
 
-def domain_annotator_node(state: ContextBuilderState) -> ContextBuilderState:
+def domain_annotator(state: ContextBuilderState) -> ContextBuilderState:
     """Enrich extracted templates with severity, causality, summary, and variables"""
 
     if not state.get('extracted_templates'):
@@ -74,5 +75,7 @@ def domain_annotator_node(state: ContextBuilderState) -> ContextBuilderState:
         state['messages'].append(f"Domain annotator successfully enriched {len(enriched_templates)} templates.")
     else:
         state['messages'].append("Domain annotator failed to enrich templates. Keeping original extracted templates.")
+    
+    # TODO: Add Human in the loop for SME and validate if the data is related properly with the domain
 
     return state

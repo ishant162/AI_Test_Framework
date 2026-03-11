@@ -1,3 +1,6 @@
+"""Workflow States Module"""
+
+
 from typing import Any, TypedDict, Literal, List, Dict, Optional, Annotated
 from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage
