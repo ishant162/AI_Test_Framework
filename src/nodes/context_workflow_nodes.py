@@ -14,10 +14,6 @@ from config.context_building_prompts import template_extraction_prompt, template
 def llm_log_parsing_node(state: ContextBuilderState) -> ContextBuilderState:
     """Phase 01: Extract structural templates and metadata using an LLM"""
 
-    # TODO:
-    # Refactor template extraction to contextual template extraction
-    # template, sample, values, variables and raw context (3 line logs before and after)
-
     user_prompt = f"Here are the logs to parse:\n\n{state['log_content']}"
     if state.get('parsing_guidance'):
         user_prompt += f"\n\nAdditional Guidance: {state['parsing_guidance']}"

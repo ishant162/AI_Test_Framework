@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     initial_state = {
         "log_content": sample_logs,
-        "parsing_guidance": "Focus on extracting database and authentication related patterns.",
+        "parsing_guidance": "",
         "extracted_templates": None,
         "augmented_data": None,
         "vector_ids": None,

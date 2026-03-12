@@ -2,26 +2,24 @@
 
 
 template_extraction_prompt = """
-You are an expert log analyst. Your task is to parse raw logs and extract unique structural templates.
-
-For each unique log pattern, provide:
-1. template: A generalized version of the log using placeholders (e.g., <IP>, <USER_ID>, <PORT>, <PATH>).
-2. timestamps: A list of raw timestamps from the logs that matched this template (use as metadata for traceability).
-
-Rules:
-- Focus purely on structural pattern recognition — ignore semantics for now.
-- Collapse all logs that share the same structure into ONE template.
-- Preserve the exact non-variable parts of the log verbatim.
-
-Return the result as a JSON list of objects with ONLY these keys: "template", "timestamps".
-
-Example output:
-[
-  {
-    "template": "User <USER_ID> logged in from <IP> at <TIMESTAMP>",
-    "timestamps": ["2024-01-01T10:00:00Z", "2024-01-01T10:05:00Z"]
-  }
-]
+ You are an expert log analyst. Parse raw logs and extract unique structural templates.
+   Return ONLY a JSON array in this exact structure, nothing else:
+   [
+     {
+       "template": "User <USER_ID> logged in from <IP_ADDRESS> at <TIMESTAMP>",
+       "values": [
+         { "USER_ID": "u_001", "IP_ADDRESS": "10.0.0.1", "TIMESTAMP": "2024-01-01T10:00:00" },
+         { "USER_ID": "u_002", "IP_ADDRESS": "10.0.0.2", "TIMESTAMP": "2024-01-01T11:00:00" }
+       ],
+       "context": {
+         "before": ["<line -3>", "<line -2>", "<line -1>"],
+         "match": "<the matching log line>",
+         "after": ["<line +1>", "<line +2>", "<line +3>"]
+       }
+     }
+   ]
+   The JSON objects must have exactly 3 keys: template, values, context. No other keys are allowed.
+   Deduplicate aggressively — logs with the same structure but different values belong to the same template entry.
 """
 
 
@@ -32,7 +30,6 @@ For each template object, ADD the following fields (do not remove or modify exis
 1. severity: (INFO, WARN, ERROR, CRITICAL) — based on what the log pattern typically signals.
 2. causality: (Network, Auth, Database, Application, System) — the most likely system domain responsible.
 3. summary: A concise, human-readable explanation of what this log pattern means and why it occurs.
-4. variables: 2-3 representative examples of real variable values extracted from the timestamps metadata (e.g., what <USER_ID> or <IP> looked like in practice).
 
 Rules:
 - Return ALL original fields unchanged ("template", "timestamps").
@@ -43,9 +40,19 @@ Input format:
 [
   {
     "template": "User <USER_ID> logged in from <IP> at <TIMESTAMP>",
-    "timestamps": ["2024-01-01T10:00:00Z", "2024-01-01T10:05:00Z"]
+    "values": [
+      {
+        "TIMESTAMP": "2026-02-13 17:56:32,910",
+        ......
+      }
+    ],
+    "context": {
+        "before": ["<line -3>", "<line -2>", "<line -1>"],
+        "match": "<the matching log line>",
+        "after": ["<line +1>", "<line +2>", "<line +3>"]
+      }
   }
 ]
 
-Return the enriched JSON list with all 6 keys per object: "template", "timestamps", "severity", "causality", "summary", "variables".
+Return the enriched JSON list with all 6 keys per object: "template", "values", "context", "severity", "causality", "summary".
 """
