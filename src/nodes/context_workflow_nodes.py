@@ -1,7 +1,8 @@
 """Context Builder Nodes Module"""
 
-
+import os
 import json
+import pandas as pd
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.llm.gen_engine_llm import llm
@@ -37,26 +38,22 @@ def llm_log_parsing_node(state: ContextBuilderState) -> ContextBuilderState:
 
     return state
 
-def augmentation_node(state: ContextBuilderState) -> ContextBuilderState:
-    """Phase 02: LLM-based augmentation and domain knowledge injection (Placeholder)"""
-
-    #TODO: To be implemented in Phase 2
-    state['messages'].append("Phase 02: Augmentation started (Placeholder).")
-    return state
-
-def vectorization_node(state: ContextBuilderState) -> ContextBuilderState:
-    """Phase 03: Vectorization and storage in ChromaDB (Placeholder)"""
-
-    #TODO: To be implemented in Phase 3
-    state['messages'].append("Phase 03: Vectorization started (Placeholder).")
-    return state
-
 def domain_annotator(state: ContextBuilderState) -> ContextBuilderState:
     """Enrich extracted templates with severity, causality, summary, and variables"""
 
     # TODO: Refactor - Load the SME excels and store it (InMemoryStore?).
     # So we give annotator new template and ref set from sme excel and
     # ask it to use sme style and approach
+
+    # 1. Load SME Reference Data
+    sme_reference_text = "No SME reference data provided."
+    if state.get('sme_excel_path') and os.path.exists(state['sme_excel_path']):
+        try:
+            df = pd.read_excel(state['sme_excel_path'])
+            sme_reference_text = df.to_json(orient="records")
+            state['messages'].append(f"Successfully loaded SME reference data from {state['sme_excel_path']}.")
+        except Exception as e:
+            state['messages'].append(f"Error loading SME Excel: {str(e)}")
 
     if not state.get('extracted_templates'):
         state['messages'].append("Domain annotator skipped: no extracted templates found.")
@@ -68,7 +65,11 @@ def domain_annotator(state: ContextBuilderState) -> ContextBuilderState:
     )
 
     response = llm.invoke([
-        SystemMessage(content=template_enrichment_prompt),
+        SystemMessage(
+            content=template_enrichment_prompt.format(
+                sme_reference_text=sme_reference_text
+            )
+        ),
         HumanMessage(content=enrichment_user_prompt)
     ])
 
@@ -84,3 +85,18 @@ def domain_annotator(state: ContextBuilderState) -> ContextBuilderState:
     # produced good results.
 
     return state
+
+def augmentation_node(state: ContextBuilderState) -> ContextBuilderState:
+    """Phase 02: LLM-based augmentation and domain knowledge injection (Placeholder)"""
+
+    #TODO: To be implemented in Phase 2
+    state['messages'].append("Phase 02: Augmentation started (Placeholder).")
+    return state
+
+def vectorization_node(state: ContextBuilderState) -> ContextBuilderState:
+    """Phase 03: Vectorization and storage in ChromaDB (Placeholder)"""
+
+    #TODO: To be implemented in Phase 3
+    state['messages'].append("Phase 03: Vectorization started (Placeholder).")
+    return state
+

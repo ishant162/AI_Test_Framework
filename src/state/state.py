@@ -34,6 +34,7 @@ class ContextBuilderState(TypedDict):
     # Input
     log_content: str
     parsing_guidance: Optional[str]
+    sme_excel_path: Optional[str]
     
     # Phase 01: Ingestion Results (LLM-Driven)
     extracted_templates: Optional[List[Dict[str, Any]]]
