@@ -39,7 +39,7 @@ template_enrichment_prompt = """
   1. severity: (INFO, WARN, ERROR, CRITICAL) — based on what the log pattern typically signals.
   2. causality: (Network, Auth, Database, Application, System) — the most likely system domain responsible.
   3. summary: A concise, human-readable explanation of what this log pattern means and why it occurs.
-  4. source: Set to "SME" if it matched an SME entry, or "LLM-Suggested" if it's new.
+  4. source: Set to "SME" if it matched an SME entry, or "AI Suggested" if it's new.
 
   Rules:
   - Return ALL original fields unchanged ("template", "timestamps").

@@ -5,7 +5,7 @@ import json
 
 from langgraph.graph import StateGraph, END
 from src.state.state import ContextBuilderState
-from src.nodes.context_workflow_nodes import llm_log_parsing_node, augmentation_node, vectorization_node
+from src.nodes.context_workflow_nodes import ContextWorkflowNode
 
 
 # Create the Context Builder Graph
@@ -13,11 +13,12 @@ def create_context_builder_workflow():
     """Create and compile the Context Builder LangGraph workflow"""
     
     workflow = StateGraph(ContextBuilderState)
+    context_workflow_node = ContextWorkflowNode()
     
     # Add nodes
-    workflow.add_node("llm_log_parsing", llm_log_parsing_node)
-    workflow.add_node("augmentation", augmentation_node)
-    workflow.add_node("vectorization", vectorization_node)
+    workflow.add_node("llm_log_parsing", context_workflow_node.llm_log_parsing_node)
+    workflow.add_node("augmentation", context_workflow_node.augmentation_node)
+    workflow.add_node("vectorization", context_workflow_node.vectorization_node)
     
     # Set entry point
     workflow.set_entry_point("llm_log_parsing")
