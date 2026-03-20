@@ -2,6 +2,7 @@
 
 import json
 import os
+from typing import Any
 
 import pandas as pd
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -43,19 +44,12 @@ class ContextWorkflowNode:
             state['extracted_templates'] = []
             state['messages'].append("LLM failed to extract structured templates.")
 
-        # Domain annotator
-        state = self.domain_annotator(state)
-
         return state
 
-    def domain_annotator(self, state: ContextBuilderState) -> ContextBuilderState:
+    def domain_annotator_node(self, state: ContextBuilderState) -> ContextBuilderState:
         """Enrich extracted templates with severity, causality, summary, and variables"""
 
-        # TODO: Refactor - Load the SME excels and store it (InMemoryStore?).
-        # So we give annotator new template and ref set from sme excel and
-        # ask it to use sme style and approach
-
-        # 1. Load SME Reference Data
+        # Load SME Reference Data
         sme_reference_text = "No SME reference data provided."
         if state.get('sme_excel_path') and os.path.exists(state['sme_excel_path']):
             try:
@@ -92,9 +86,17 @@ class ContextWorkflowNode:
         else:
             state['messages'].append("Domain annotator failed to enrich templates. Keeping original extracted templates.")
 
-        # TODO: Add Human in the loop for SME and validate if the data is related properly with the domain and if LLM
-        # produced good results.
+        return state
 
+    def human_review_node(self, state: Any) -> Any:
+        """
+        Human Review Entry Point.
+        This node is reached AFTER the human provides input during the interrupt.
+        """
+        if state.get('review_approved'):
+            state['messages'].append("Human review approved. Proceeding to next steps.")
+        else:
+            state['messages'].append("Human review rejected or pending. Workflow paused/stopped.")
         return state
 
     def augmentation_node(self, state: ContextBuilderState) -> ContextBuilderState:

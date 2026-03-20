@@ -40,6 +40,10 @@ class ContextBuilderState(TypedDict):
     # Phase 01: Ingestion Results (LLM-Driven)
     extracted_templates: list[dict[str, Any]] | None
 
+    # Human in the loop
+    review_approved: bool
+    review_comments: str | None
+
     # Phase 02: Augmentation Results
     augmented_data: list[dict[str, Any]] | None
 
