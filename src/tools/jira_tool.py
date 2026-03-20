@@ -5,7 +5,6 @@ import os
 
 from dotenv import load_dotenv
 from langchain_core.tools import tool
-from typing import Dict
 
 load_dotenv()
 
@@ -16,15 +15,15 @@ JIRA_PROJECT_KEY = os.environ["JIRA_PROJECT_KEY"]
 
 
 @tool
-def create_jira_ticket(summary: str, description: str, testcase_name: str) -> Dict[str, str]:
+def create_jira_ticket(summary: str, description: str, testcase_name: str) -> dict[str, str]:
     """
     Create a Jira ticket for a failed test case.
-    
+
     Args:
         summary: Brief summary of the issue
         description: Detailed description of the failure
         testcase_name: Name of the failed test case
-    
+
     Returns:
         Dictionary with ticket information
     """

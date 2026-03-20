@@ -1,32 +1,33 @@
 """Log Analysis Workflow Module"""
 
 
-from langgraph.graph import StateGraph, END
-from src.state.state import TestLogState
+from langgraph.graph import END, StateGraph
+
 from src.nodes.analysis_workflow_nodes import (
+    execution_layer,
+    failure_analysis,
     framework_log_analysis,
     pass_analysis,
-    failure_analysis,
-    execution_layer,
-    tools_and_capture,
     route_after_analysis,
-    route_after_execution
+    route_after_execution,
+    tools_and_capture,
 )
+from src.state.state import TestLogState
 
 
 def create_workflow():
     """Create and compile the LangGraph workflow"""
-    
+
     # Initialize graph
     workflow = StateGraph(TestLogState)
-    
+
     # Add nodes
     workflow.add_node("framework_log_analysis", framework_log_analysis)
     workflow.add_node("pass_analysis", pass_analysis)
     workflow.add_node("failure_analysis", failure_analysis)
     workflow.add_node("execution_layer", execution_layer)
-    workflow.add_node("tools", tools_and_capture)   
-    
+    workflow.add_node("tools", tools_and_capture)
+
     # Set entry point
     workflow.set_entry_point("framework_log_analysis")
     # Add conditional edges
@@ -56,19 +57,19 @@ def create_workflow():
 
     # Compile
     app = workflow.compile()
-    
+
     return app
 
 
 if __name__ == "__main__":
     # Example usage
     app = create_workflow()
-    
+
     # Sample test log
-    with open("./data/test_framework_fail.log", "r") as f:
+    with open("./data/test_framework_fail.log") as f:
         sample_log = f.read()
 
-    
+
     # sample_log = """
     # [2024-06-01 10:23:44] TESTCASE: test_login FAILED
     # Error: Timeout waiting for response
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     # [2024-06-01 10:23:50] TESTCASE: test_signup PASSED
     # """
 
-    
+
     # Run workflow
     initial_state = {
         "log_content": sample_log,
@@ -89,11 +90,11 @@ if __name__ == "__main__":
         "jira_tickets": None,
         "messages": []
     }
-    
+
     result = app.invoke(initial_state)
-    
+
     if result.get('summary_report', ""):
         print(f"\nSummary report:\n{result['summary_report']}")
-    
+
     if result.get('jira_tickets', []):
         print(f"\njira_tickets:\n{result['jira_tickets']}")

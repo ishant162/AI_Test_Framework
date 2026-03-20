@@ -1,49 +1,50 @@
 """Workflow States Module"""
 
 
-from typing import Any, TypedDict, Literal, List, Dict, Optional, Annotated
-from langgraph.graph.message import add_messages
+from typing import Annotated, Any, Literal, TypedDict
+
 from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 
 
 class TestLogState(TypedDict):
     """State schema for test log analysis workflow"""
-    
+
     # Input
     log_content: str
-    
+
     # Analysis results
-    test_status: Optional[Literal["passed", "failed"]]
-    failed_testcases: Optional[List[str]]
-    
+    test_status: Literal["passed", "failed"] | None
+    failed_testcases: list[str] | None
+
     # Reports
-    summary_report: Optional[str]
-    failure_report: Optional[str]
-    
+    summary_report: str | None
+    failure_report: str | None
+
     # Actions
-    action_plan: Optional[str]
-    jira_tickets: Optional[List[Dict[str, str]]]
-    
+    action_plan: str | None
+    jira_tickets: list[dict[str, str]] | None
+
     # Messages for LLM
-    messages: Annotated[List[BaseMessage], add_messages]
+    messages: Annotated[list[BaseMessage], add_messages]
 
 
 class ContextBuilderState(TypedDict):
     """State schema for the Context Builder workflow"""
-    
+
     # Input
     log_content: str
-    parsing_guidance: Optional[str]
-    sme_excel_path: Optional[str]
-    
+    parsing_guidance: str | None
+    sme_excel_path: str | None
+
     # Phase 01: Ingestion Results (LLM-Driven)
-    extracted_templates: Optional[List[Dict[str, Any]]]
-    
+    extracted_templates: list[dict[str, Any]] | None
+
     # Phase 02: Augmentation Results
-    augmented_data: Optional[List[Dict[str, Any]]]
-    
+    augmented_data: list[dict[str, Any]] | None
+
     # Phase 03: Vectorization Results
-    vector_ids: Optional[List[str]]
-    
+    vector_ids: list[str] | None
+
     # Messages for tracking progress
-    messages: List[str]
+    messages: list[str]

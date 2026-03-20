@@ -1,14 +1,18 @@
 """Context Builder Nodes Module"""
 
-import os
 import json
+import os
+
 import pandas as pd
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from config.context_building_prompts import (
+    template_enrichment_prompt,
+    template_extraction_prompt,
+)
 from src.llm.gen_engine_llm import GenEngineLLM
 from src.state.state import ContextBuilderState
 from src.utils.utils import extract_and_parse_json
-from config.context_building_prompts import template_extraction_prompt, template_enrichment_prompt
 
 
 class ContextWorkflowNode:

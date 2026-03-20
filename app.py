@@ -1,9 +1,11 @@
 """Main Entry Module"""
 
 
-import gradio as gr
-import traceback
 import re
+import traceback
+
+import gradio as gr
+
 from src.graph.log_analysis_workflow import create_workflow
 
 app = create_workflow()
@@ -51,10 +53,10 @@ def format_jira_tickets(jira_list):
         out += f"""
 #### 🧾 Ticket: **{ticket_id}**
 
-**Summary:** {summary}  
+**Summary:** {summary}
 **Status:** {status}
 
-**Description:**  
+**Description:**
 {description}
 
 {details_section}
@@ -114,7 +116,7 @@ def analyze_logs(log_text: str):
             failed_md = "### ✔ No Failed Tests"
 
         status_md = f"""
-### 🧪 Test Status  
+### 🧪 Test Status
 **{status.upper()}**
 
 {failed_md}
@@ -195,15 +197,19 @@ with gr.Blocks() as demo:
     # Wrap analysis area with an element ID so we can scroll to it
     with gr.Column(elem_id="analysis_section"):
         with gr.Tabs():
-            with gr.Tab("Status"): status_out = gr.Markdown()
-            with gr.Tab("Success Report"): summary_out = gr.Markdown()
-            with gr.Tab("Failure Report"): failure_out = gr.Markdown()
-            with gr.Tab("Jira Tickets"): jira_msg_out = gr.Markdown()
+            with gr.Tab("Status"):
+                status_out = gr.Markdown()
+            with gr.Tab("Success Report"):
+                summary_out = gr.Markdown()
+            with gr.Tab("Failure Report"):
+                failure_out = gr.Markdown()
+            with gr.Tab("Jira Tickets"):
+                jira_msg_out = gr.Markdown()
 
-    def disable_button(): 
+    def disable_button():
         return gr.update(value="⏳ Processing...", interactive=False)
 
-    def enable_button(): 
+    def enable_button():
         return gr.update(value="🚀 Generate Analysis", interactive=True)
 
     # After analysis, clear the uploaded file input

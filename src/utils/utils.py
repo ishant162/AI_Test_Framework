@@ -3,10 +3,10 @@
 
 import json
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 
-def extract_and_parse_json(text: str) -> Optional[Dict[str, Any]]:
+def extract_and_parse_json(text: str) -> dict[str, Any] | None:
     """
     Robustly extract and parse JSON from a string that may contain markdown or extra text.
     """

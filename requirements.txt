@@ -10,3 +10,4 @@ sentence-transformers
 chromadb
 langchain-community
 regex
+ruff
