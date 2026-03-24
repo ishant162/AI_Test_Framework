@@ -2,6 +2,8 @@
 __pycache__
 data
 node_modules/
+.DS_Store
 venv/
 .vscode
 .ruff_cache
+

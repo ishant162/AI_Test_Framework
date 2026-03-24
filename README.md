@@ -106,3 +106,4 @@ The script will process sample logs, pause for human review in the CLI, and then
 
 ### **5. Running the Main Log-to-Jira Workflow (Future)**
 (Instructions for the main workflow will be added once fully implemented and integrated with the Context Builder's knowledge base.)
+
