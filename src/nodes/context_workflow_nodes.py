@@ -107,8 +107,32 @@ class ContextWorkflowNode:
         return state
 
     def vectorization_node(self, state: ContextBuilderState) -> ContextBuilderState:
-        """Phase 03: Vectorization and storage in ChromaDB (Placeholder)"""
+        """Phase 03: Embedding, anomaly detection, clustering, vector storage"""
 
-        #TODO: To be implemented in Phase 3
-        state['messages'].append("Phase 03: Vectorization started (Placeholder).")
+        from src.vectorstore.phase3_pipeline import Phase3Pipeline
+
+        templates = (
+            state.get("augmented_data")
+            or state.get("extracted_templates")
+            or []
+        )
+
+        if not templates:
+            state["messages"].append("No templates available for vectorization.")
+            state["vector_ids"] = []
+            return state
+
+        try:
+            pipeline = Phase3Pipeline()
+            ids = pipeline.run(templates)
+
+            state["vector_ids"] = ids
+            state["messages"].append(
+                f"Phase‑3 completed: {len(ids)} embeddings stored with anomalies & clusters."
+            )
+
+        except Exception as e:
+            state["messages"].append(f"Phase‑3 failed: {str(e)}")
+            state["vector_ids"] = []
+
         return state
