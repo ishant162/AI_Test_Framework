@@ -8,10 +8,11 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 from langgraph.prebuilt import ToolNode
 
 from config.log_analysis_prompts import log_analysis_system_prompt
-from src.llm.gen_engine_llm import llm
+from src.llm.gen_engine_llm import GenEngineLLM
 from src.state.state import TestLogState
 from src.tools.jira_tool import jira_tools
 
+llm = GenEngineLLM().get_llm_model()
 
 def framework_log_analysis(state: TestLogState) -> TestLogState:
     """Analyze test framework logs to determine pass/fail status"""
