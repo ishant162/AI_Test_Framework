@@ -1,47 +1,51 @@
 import os
-import json
-from src.vectorstore.phase3_pipeline import Phase3Pipeline
+from dotenv import load_dotenv
 
-def test_phase3():
+from src.vectorstore.vector_retrieval import VectorRetriever
+
+
+def test_phase3_retrieval():
     print("\n==============================")
-    print("   PHASE‑3 PIPELINE TEST RUN  ")
+    print("   PHASE‑3 RETRIEVAL TEST RUN ")
     print("==============================\n")
 
     # ---------------------------------------------------------
-    # STEP 1: Locate sample data file inside test_data folder
+    # STEP 1: Load API key from .env
     # ---------------------------------------------------------
-    BASE_DIR = os.path.dirname(__file__)
-    json_path = os.path.join(BASE_DIR, "phase3_sample_data.json")
+    load_dotenv()
+    API_KEY = os.getenv("API_KEY")
 
-    print(f"Loading sample Phase‑3 data from:\n{json_path}\n")
-
-    with open(json_path, "r") as f:
-        templates = json.load(f)
-
-    print(f"✅ Loaded {len(templates)} templates for vectorization.\n")
+    if not API_KEY:
+        raise ValueError("❌ API_KEY missing in .env")
 
     # ---------------------------------------------------------
-    # STEP 2: Run the Phase‑3 pipeline
+    # STEP 2: Initialize retriever
     # ---------------------------------------------------------
-    API_KEY = ""
-
-    pipeline = Phase3Pipeline(api_key=API_KEY)
-
-    print("Running Phase‑3 pipeline...\n")
-    vector_ids = pipeline.run(templates)
+    retriever = VectorRetriever(api_key=API_KEY)
 
     # ---------------------------------------------------------
-    # STEP 3: Show results
+    # STEP 3: Ask a query to retrieve similar log templates
     # ---------------------------------------------------------
-    print("✅ Phase‑3 Completed Successfully!")
-    print(f"✅ Stored {len(vector_ids)} embeddings into ChromaDB.\n")
+    query = "connection timeout issue"
+    print(f"🔍 Retrieving matches for query:\n   \"{query}\"\n")
 
-    print("Generated Vector IDs:")
-    for vid in vector_ids:
-        print(f" - {vid}")
+    result = retriever.retrieve(query=query, top_k=3)
 
-    print("\nYou can now inspect the folder './phase3_chroma/' to see the stored embeddings.\n")
+    # ---------------------------------------------------------
+    # STEP 4: Print Results
+    # ---------------------------------------------------------
+    print("✅ Retrieval Completed!\n")
+
+    for idx, r in enumerate(result["results"]):
+        print(f"Result #{idx + 1}")
+        print(f"  ✅ Vector ID:  {r['id']}")
+        print(f"  ✅ Template:   {r['document']}")
+        print(f"  ✅ Metadata:   {r['metadata']}")
+        print(f"  ✅ Distance:   {r['distance']}")
+        print("--------------------------------------------------")
+
+    print("\n✅ Retrieval test complete.\n")
 
 
 if __name__ == "__main__":
-    test_phase3()
+    test_phase3_retrieval()
