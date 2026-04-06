@@ -37,11 +37,22 @@ def test_phase3_retrieval():
     print("✅ Retrieval Completed!\n")
 
     for idx, r in enumerate(result["results"]):
-        print(f"Result #{idx + 1}")
+        meta = r["metadata"]
+
+        print(f"\nResult #{idx + 1}")
         print(f"  ✅ Vector ID:  {r['id']}")
         print(f"  ✅ Template:   {r['document']}")
-        print(f"  ✅ Metadata:   {r['metadata']}")
-        print(f"  ✅ Distance:   {r['distance']}")
+
+        print("  ✅ Metadata:")
+        print(f"      • Severity:           {meta.get('severity')}")
+        print(f"      • Summary:            {meta.get('summary')}")
+        print(f"      • Causality:          {meta.get('causality')}")
+        print(f"      • Is Anomaly:         {meta.get('is_anomaly')}")
+        print(f"      • Anomaly Score:      {meta.get('anomaly_score')}")
+        print(f"      • Cluster ID:         {meta.get('cluster_id')}")
+        print(f"      • Cluster Confidence: {meta.get('cluster_confidence')}")
+
+        print(f"  ✅ Distance: {r['distance']}")
         print("--------------------------------------------------")
 
     print("\n✅ Retrieval test complete.\n")

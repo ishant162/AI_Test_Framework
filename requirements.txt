@@ -2,12 +2,21 @@ langgraph
 langchain
 langchain-openai
 langchain-core
+langchain-community
+
 python-dotenv
 gradio
 jira
 drain3
 sentence-transformers
 chromadb
-langchain-community
 regex
 ruff
+
+# ML / Vector Processing
+numpy
+scikit-learn
+
+# New: Required for Improved Pipeline
+hdbscan
+numba  # optional but recommended for HDBSCAN performance
