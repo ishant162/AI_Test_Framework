@@ -109,7 +109,7 @@ class ContextWorkflowNode:
     def vectorization_node(self, state: ContextBuilderState) -> ContextBuilderState:
         """Phase 03: Embedding, anomaly detection, clustering, vector storage"""
 
-        from src.vectorstore.phase3_pipeline import Phase3Pipeline
+        from src.vectorstore.embedding_pipeline import Phase3Pipeline
 
         templates = (
             state.get("augmented_data")
