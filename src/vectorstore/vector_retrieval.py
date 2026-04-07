@@ -21,31 +21,27 @@ class VectorRetriever:
 
         self.collection_name = collection_name
 
-        # ✅ Titan embedder
+        # Titan embedder
         self.embedder = EmbeddingManager(
             api_key=self.api_key,
             model_name="amazon.titan-embed-text-v2:0"
         )
 
-        # ✅ SAME vector store as Phase‑3
+        # SAME vector store as Phase‑3
         self.client = chromadb.PersistentClient(path="./phase3_chroma")
 
-        # ✅ Load the stored vector collection
+        # Load the stored vector collection
         self.collection = self.client.get_or_create_collection(
             name=self.collection_name,
             metadata={"description": "Phase‑3 embeddings collection"}
         )
 
-    # ----------------------------------------------------------------------
-    # ✅ Embed user query
-    # ----------------------------------------------------------------------
+    # Embed user query
     def embed_query(self, text: str) -> np.ndarray:
         vec = self.embedder.generate_embeddings([text])
         return vec[0]
 
-    # ----------------------------------------------------------------------
-    # ✅ Retrieve similar vectors
-    # ----------------------------------------------------------------------
+    # Retrieve similar vectors
     def retrieve(self, query: str, top_k: int = 5) -> Dict[str, Any]:
         query_vec = self.embed_query(query)
 

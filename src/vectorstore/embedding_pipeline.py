@@ -131,7 +131,6 @@ class EmbeddingPipeline:
 
     
     # COMPLETE PIPELINE EXECUTION
-    
     def run(self, templates):
         """
         Run the complete Phase‑3 pipeline:

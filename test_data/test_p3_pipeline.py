@@ -40,26 +40,26 @@ def test_phase3_pipeline():
         }
     ]
 
-    print("✅ Sample templates prepared")
+    print("Sample templates prepared")
 
     
     # STEP 3: Initialize pipeline  
     pipeline = EmbeddingPipeline(api_key=API_KEY)
-    print("✅ Phase‑3 pipeline initialized")
+    print("Phase‑3 pipeline initialized")
 
     
     # STEP 4: Run full pipeline (embed → normalize → anomalies → cluster → store)  
-    print("\n🚀 Running Phase‑3 pipeline...\n")
+    print("\nRunning Phase‑3 pipeline...\n")
     ids = pipeline.run(templates)
 
     
     # STEP 5: Show stored vector IDs  
-    print("\n✅ Pipeline execution complete!")
-    print("✅ Stored Vector IDs:")
+    print("\nPipeline execution complete!")
+    print("Stored Vector IDs:")
     for vid in ids:
         print(f"   • {vid}")
 
-    print("\n✅ Phase‑3 storage test complete.\n")
+    print("\nPhase‑3 storage test complete.\n")
 
 
 if __name__ == "__main__":
