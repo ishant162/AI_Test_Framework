@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 from src.vectorstore.embedding_pipeline import EmbeddingPipeline
 
 
-def test_phase3_pipeline():
+def test_embedding_pipeline():
     print("\n==============================")
-    print("   PHASE‑3 PIPELINE TEST RUN  ")
+    print("   EMBEDDING PIPELINE TEST RUN  ")
     print("==============================\n")
 
     
@@ -45,11 +45,11 @@ def test_phase3_pipeline():
     
     # STEP 3: Initialize pipeline  
     pipeline = EmbeddingPipeline(api_key=API_KEY)
-    print("Phase‑3 pipeline initialized")
+    print("Embedding pipeline initialized")
 
     
     # STEP 4: Run full pipeline (embed → normalize → anomalies → cluster → store)  
-    print("\nRunning Phase‑3 pipeline...\n")
+    print("\nRunning embedding pipeline...\n")
     ids = pipeline.run(templates)
 
     
@@ -59,8 +59,7 @@ def test_phase3_pipeline():
     for vid in ids:
         print(f"   • {vid}")
 
-    print("\nPhase‑3 storage test complete.\n")
-
+    print("\nEmbedding storage test complete.\n")
 
 if __name__ == "__main__":
-    test_phase3_pipeline()
+    test_embedding_pipeline()

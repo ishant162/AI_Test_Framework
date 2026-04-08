@@ -6,5 +6,4 @@ node_modules/
 venv/
 .vscode
 .ruff_cache
-.phase3_chroma/
-.src/test_data/
+.log_embeddings/

@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 from src.vectorstore.vector_retrieval import VectorRetriever
 
 
-def test_phase3_retrieval():
+def test_retrieval_pipeline():
     print("\n==============================")
-    print("   PHASE 3 RETRIEVAL TEST RUN ")
+    print("   RETRIEVAL PIPELINE TEST RUN ")
     print("==============================\n")
 
     # Load environment variables and read the API key
@@ -47,4 +47,4 @@ def test_phase3_retrieval():
 
 
 if __name__ == "__main__":
-    test_phase3_retrieval()
+    test_retrieval_pipeline()
