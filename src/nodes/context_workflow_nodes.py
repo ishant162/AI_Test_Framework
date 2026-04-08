@@ -109,7 +109,7 @@ class ContextWorkflowNode:
     def vectorization_node(self, state: ContextBuilderState) -> ContextBuilderState:
         """Phase 03: Embedding, anomaly detection, clustering, vector storage"""
 
-        from src.vectorstore.embedding_pipeline import Phase3Pipeline
+        from src.vectorstore.embedding_pipeline import EmbeddingPipeline
 
         templates = (
             state.get("augmented_data")
@@ -123,16 +123,16 @@ class ContextWorkflowNode:
             return state
 
         try:
-            pipeline = Phase3Pipeline()
+            pipeline = EmbeddingPipeline()
             ids = pipeline.run(templates)
 
             state["vector_ids"] = ids
             state["messages"].append(
-                f"Phase‑3 completed: {len(ids)} embeddings stored with anomalies & clusters."
-            )
+    f"Embedding completed: {len(ids)} templates indexed for retrieval."
+)
 
         except Exception as e:
-            state["messages"].append(f"Phase‑3 failed: {str(e)}")
+            state["messages"].append(f"Embedding failed: {str(e)}")
             state["vector_ids"] = []
 
         return state

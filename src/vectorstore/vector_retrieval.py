@@ -11,7 +11,7 @@ from src.vectorstore.embedding_manager import EmbeddingManager
 
 class VectorRetriever:
 
-    def __init__(self, api_key: str = None, collection_name="phase3_vectors"):
+    def __init__(self, api_key: str = None, collection_name="log_templates"):
 
         load_dotenv()
         self.api_key = api_key or os.getenv("API_KEY")
@@ -27,13 +27,13 @@ class VectorRetriever:
             model_name="amazon.titan-embed-text-v2:0"
         )
 
-        # SAME vector store as Phase‑3
-        self.client = chromadb.PersistentClient(path="./phase3_chroma")
+        # Vector store used by the embedding pipeline
+        self.client = chromadb.PersistentClient(path="./log_embeddings")
 
         # Load the stored vector collection
         self.collection = self.client.get_or_create_collection(
             name=self.collection_name,
-            metadata={"description": "Phase‑3 embeddings collection"}
+            metadata={"description": "Semantic embeddings for log templates"}
         )
 
     # Embed user query

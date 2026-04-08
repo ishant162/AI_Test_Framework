@@ -1,4 +1,4 @@
-# src/vectorstore/phase3_pipeline.py
+# src/vectorstore/embedding_pipeline.py
 
 import uuid
 import numpy as np
@@ -13,7 +13,7 @@ from src.vectorstore.embedding_manager import EmbeddingManager
 
 class EmbeddingPipeline:
     """
-    Phase‑3 Pipeline (Simplified):
+    Embedding Pipeline (Simplified):
 
     Steps performed by this pipeline:
     1. Generate embeddings for log templates using Amazon Titan
@@ -28,7 +28,7 @@ class EmbeddingPipeline:
 
     def __init__(self, api_key: str = None):
         """
-        Initialize the Phase‑3 pipeline.
+        Initialize the embedding pipeline.
 
         - Loads API key
         - Initializes embedding model
@@ -50,12 +50,12 @@ class EmbeddingPipeline:
         )
 
         # Initialize Chroma persistent client
-        self.client = chromadb.PersistentClient(path="./phase3_chroma")
+        self.client = chromadb.PersistentClient(path="./log_embeddings")
 
         # Create or load the vector collection
         self.collection = self.client.get_or_create_collection(
-            name="phase3_vectors",
-            metadata={"description": "Phase‑3 vector embeddings from logs"}
+            name="log_templates",
+            metadata={"description": "Semantic embeddings for log templates"}
         )
 
         # Scaler used to normalize embedding vectors
@@ -133,7 +133,7 @@ class EmbeddingPipeline:
     # COMPLETE PIPELINE EXECUTION
     def run(self, templates):
         """
-        Run the complete Phase‑3 pipeline:
+        Run the complete embedding pipeline:
         - Embed templates
         - Normalize vectors
         - Store results in ChromaDB
@@ -150,5 +150,5 @@ class EmbeddingPipeline:
 
         return self.store_vectors(
             templates,
-            raw_vectors
+            normalized_vectors
         )
