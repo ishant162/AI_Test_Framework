@@ -1,6 +1,5 @@
 """Log Analysis Prompt Module"""
 
-
 log_analysis_system_prompt = """
     You are a log analyst. Your job is to determine test results from raw logs and return ONLY a strict JSON object.
     Decision rules (apply in order):

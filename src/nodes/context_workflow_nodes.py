@@ -27,22 +27,26 @@ class ContextWorkflowNode:
         """Phase 01: Extract structural templates and metadata using an LLM"""
 
         user_prompt = f"Here are the logs to parse:\n\n{state['log_content']}"
-        if state.get('parsing_guidance'):
+        if state.get("parsing_guidance"):
             user_prompt += f"\n\nAdditional Guidance: {state['parsing_guidance']}"
 
-        response = self.llm.invoke([
-            SystemMessage(content=template_extraction_prompt),
-            HumanMessage(content=user_prompt)
-        ])
+        response = self.llm.invoke(
+            [
+                SystemMessage(content=template_extraction_prompt),
+                HumanMessage(content=user_prompt),
+            ]
+        )
 
         templates = extract_and_parse_json(response.content)
 
         if templates and isinstance(templates, list):
-            state['extracted_templates'] = templates
-            state['messages'].append(f"LLM successfully extracted {len(templates)} unique templates.")
+            state["extracted_templates"] = templates
+            state["messages"].append(
+                f"LLM successfully extracted {len(templates)} unique templates."
+            )
         else:
-            state['extracted_templates'] = []
-            state['messages'].append("LLM failed to extract structured templates.")
+            state["extracted_templates"] = []
+            state["messages"].append("LLM failed to extract structured templates.")
 
         return state
 
@@ -51,16 +55,20 @@ class ContextWorkflowNode:
 
         # Load SME Reference Data
         sme_reference_text = "No SME reference data provided."
-        if state.get('sme_excel_path') and os.path.exists(state['sme_excel_path']):
+        if state.get("sme_excel_path") and os.path.exists(state["sme_excel_path"]):
             try:
-                df = pd.read_excel(state['sme_excel_path'])
+                df = pd.read_excel(state["sme_excel_path"])
                 sme_reference_text = df.to_json(orient="records")
-                state['messages'].append(f"Successfully loaded SME reference data from {state['sme_excel_path']}.")
+                state["messages"].append(
+                    f"Successfully loaded SME reference data from {state['sme_excel_path']}."
+                )
             except Exception as e:
-                state['messages'].append(f"Error loading SME Excel: {str(e)}")
+                state["messages"].append(f"Error loading SME Excel: {str(e)}")
 
-        if not state.get('extracted_templates'):
-            state['messages'].append("Domain annotator skipped: no extracted templates found.")
+        if not state.get("extracted_templates"):
+            state["messages"].append(
+                "Domain annotator skipped: no extracted templates found."
+            )
             return state
 
         enrichment_user_prompt = (
@@ -68,23 +76,28 @@ class ContextWorkflowNode:
             f"{json.dumps(state['extracted_templates'], indent=2)}"
         )
 
-        response = self.llm.invoke([
-            SystemMessage(
-                content=template_enrichment_prompt.replace(
-                    "{sme_reference_text}",
-                    sme_reference_text
-                )
-            ),
-            HumanMessage(content=enrichment_user_prompt)
-        ])
+        response = self.llm.invoke(
+            [
+                SystemMessage(
+                    content=template_enrichment_prompt.replace(
+                        "{sme_reference_text}", sme_reference_text
+                    )
+                ),
+                HumanMessage(content=enrichment_user_prompt),
+            ]
+        )
 
         enriched_templates = extract_and_parse_json(response.content)
 
         if enriched_templates and isinstance(enriched_templates, list):
-            state['extracted_templates'] = enriched_templates
-            state['messages'].append(f"Domain annotator successfully enriched {len(enriched_templates)} templates.")
+            state["extracted_templates"] = enriched_templates
+            state["messages"].append(
+                f"Domain annotator successfully enriched {len(enriched_templates)} templates."
+            )
         else:
-            state['messages'].append("Domain annotator failed to enrich templates. Keeping original extracted templates.")
+            state["messages"].append(
+                "Domain annotator failed to enrich templates. Keeping original extracted templates."
+            )
 
         return state
 
@@ -93,17 +106,19 @@ class ContextWorkflowNode:
         Human Review Entry Point.
         This node is reached AFTER the human provides input during the interrupt.
         """
-        if state.get('review_approved'):
-            state['messages'].append("Human review approved. Proceeding to next steps.")
+        if state.get("review_approved"):
+            state["messages"].append("Human review approved. Proceeding to next steps.")
         else:
-            state['messages'].append("Human review rejected or pending. Workflow paused/stopped.")
+            state["messages"].append(
+                "Human review rejected or pending. Workflow paused/stopped."
+            )
         return state
 
     def augmentation_node(self, state: ContextBuilderState) -> ContextBuilderState:
         """Phase 02: LLM-based augmentation and domain knowledge injection (Placeholder)"""
 
-        #TODO: To be implemented in Phase 2
-        state['messages'].append("Phase 02: Augmentation started (Placeholder).")
+        # TODO: To be implemented in Phase 2
+        state["messages"].append("Phase 02: Augmentation started (Placeholder).")
         return state
 
     def vectorization_node(self, state: ContextBuilderState) -> ContextBuilderState:
@@ -112,9 +127,7 @@ class ContextWorkflowNode:
         from src.vectorstore.embedding_pipeline import EmbeddingPipeline
 
         templates = (
-            state.get("augmented_data")
-            or state.get("extracted_templates")
-            or []
+            state.get("augmented_data") or state.get("extracted_templates") or []
         )
 
         if not templates:
@@ -128,8 +141,8 @@ class ContextWorkflowNode:
 
             state["vector_ids"] = ids
             state["messages"].append(
-    f"Embedding completed: {len(ids)} templates indexed for retrieval."
-)
+                f"Embedding completed: {len(ids)} templates indexed for retrieval."
+            )
 
         except Exception as e:
             state["messages"].append(f"Embedding failed: {str(e)}")

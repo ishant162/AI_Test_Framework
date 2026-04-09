@@ -7,13 +7,14 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-api_key = os.environ['API_KEY']
+api_key = os.environ["API_KEY"]
 
 
 class GenEngineLLM:
     """
     OpenAI LLM wrapper for interacting with the OpenAI API.
     """
+
     def __init__(self):
         self.api_key = api_key
 
@@ -28,6 +29,8 @@ class GenEngineLLM:
             model="openai.gpt-5.1",  # Specify the OpenAI model you want to use
             base_url="https://openai.generative.engine.capgemini.com/v1",
             api_key=api_key,
-            default_headers={"x-api-key": api_key}  # Some implementations require this header
+            default_headers={
+                "x-api-key": api_key
+            },  # Some implementations require this header
         )
         return llm

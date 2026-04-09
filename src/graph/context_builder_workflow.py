@@ -1,6 +1,5 @@
 """Context Builder Workflow Module"""
 
-
 from typing import Any
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -38,12 +37,10 @@ def create_context_builder_workflow():
     memory = MemorySaver()
 
     # Compile with interrupt BEFORE human_review
-    app = workflow.compile(
-        checkpointer=memory,
-        interrupt_before=["human_review"]
-    )
+    app = workflow.compile(checkpointer=memory, interrupt_before=["human_review"])
 
     return app
+
 
 def run_cli_review(app, thread_id: str, initial_state: dict[str, Any]):
     """Helper function to run the workflow with CLI-based HITL review"""
@@ -59,7 +56,7 @@ def run_cli_review(app, thread_id: str, initial_state: dict[str, Any]):
     state = app.get_state(config)
     if state.next and "human_review" in state.next:
         print("\n--- HUMAN REVIEW REQUIRED ---")
-        templates = state.values.get('extracted_templates', [])
+        templates = state.values.get("extracted_templates", [])
 
         if not templates:
             print("No templates found to review.")
@@ -67,7 +64,7 @@ def run_cli_review(app, thread_id: str, initial_state: dict[str, Any]):
         else:
             print(f"Please review the following {len(templates)} templates:")
             for i, t in enumerate(templates):
-                print(f"\nTemplate {i+1}:")
+                print(f"\nTemplate {i + 1}:")
                 print(f"  Pattern:  {t.get('template')}")
                 print(f"  Severity: {t.get('severity', 'N/A')}")
                 print(f"  Category: {t.get('causality', 'N/A')}")
@@ -76,20 +73,32 @@ def run_cli_review(app, thread_id: str, initial_state: dict[str, Any]):
             # CLI Interaction
             choice = input("\nApprove these templates? (y/n/edit): ").lower()
 
-            if choice == 'y':
-                app.update_state(config, {"review_approved": True}, as_node="human_review")
-            elif choice == 'edit':
+            if choice == "y":
+                app.update_state(
+                    config, {"review_approved": True}, as_node="human_review"
+                )
+            elif choice == "edit":
                 idx = int(input("Enter template number to edit (1-N): ")) - 1
                 if 0 <= idx < len(templates):
-                    field = input("Enter field to edit (Severity/Category/summary): ").lower()
+                    field = input(
+                        "Enter field to edit (Severity/Category/summary): "
+                    ).lower()
                     new_val = input(f"Enter new value for {field}: ")
                     templates[idx][field] = new_val
-                    app.update_state(config, {"extracted_templates": templates, "review_approved": True}, as_node="human_review")
+                    app.update_state(
+                        config,
+                        {"extracted_templates": templates, "review_approved": True},
+                        as_node="human_review",
+                    )
                 else:
                     print("Invalid index.")
-                    app.update_state(config, {"review_approved": False}, as_node="human_review")
+                    app.update_state(
+                        config, {"review_approved": False}, as_node="human_review"
+                    )
             else:
-                app.update_state(config, {"review_approved": False}, as_node="human_review")
+                app.update_state(
+                    config, {"review_approved": False}, as_node="human_review"
+                )
 
         # 3. Resume the workflow
         print("\n--- Resuming Workflow ---")
@@ -102,7 +111,6 @@ def run_cli_review(app, thread_id: str, initial_state: dict[str, Any]):
 
 
 if __name__ == "__main__":
-
     # Initialize the workflow
     app = create_context_builder_workflow()
 
@@ -117,17 +125,13 @@ if __name__ == "__main__":
         "sme_excel_path": None,
         "extracted_templates": None,
         "review_approved": False,
-        "messages": []
+        "messages": [],
     }
 
     # Use the helper function to run the workflow with CLI review
     # This single call handles the start, the interrupt, the CLI interaction, and the resume.
     final_result = run_cli_review(
-        app=app,
-        thread_id="context_build_001",
-        initial_state=initial_state
+        app=app, thread_id="context_build_001", initial_state=initial_state
     )
 
     print("Workflow Executed")
-
-

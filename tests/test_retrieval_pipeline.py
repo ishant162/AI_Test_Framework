@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 
 from src.vectorstore.vector_retrieval import VectorRetriever
@@ -21,7 +22,7 @@ def test_retrieval_pipeline():
 
     # Query used to test semantic retrieval
     query = "connection timeout issue"
-    print(f"Running retrieval for query:\n\"{query}\"\n")
+    print(f'Running retrieval for query:\n"{query}"\n')
 
     result = retriever.retrieve(query=query, top_k=3)
 
@@ -39,7 +40,7 @@ def test_retrieval_pipeline():
         print(f"  Severity            : {meta.get('severity')}")
         print(f"  Summary             : {meta.get('summary')}")
         print(f"  Causality           : {meta.get('causality')}")
-       
+
         print(f"Distance          : {r['distance']}")
         print("-" * 50)
 

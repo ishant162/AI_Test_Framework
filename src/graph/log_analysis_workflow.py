@@ -1,6 +1,5 @@
 """Log Analysis Workflow Module"""
 
-
 from langgraph.graph import END, StateGraph
 
 from src.nodes.analysis_workflow_nodes import (
@@ -34,10 +33,7 @@ def create_workflow():
     workflow.add_conditional_edges(
         "framework_log_analysis",
         route_after_analysis,
-        {
-            "pass_analysis": "pass_analysis",
-            "failure_analysis": "failure_analysis"
-        }
+        {"pass_analysis": "pass_analysis", "failure_analysis": "failure_analysis"},
     )
     # Pass analysis goes to end
     workflow.add_edge("pass_analysis", END)
@@ -45,12 +41,7 @@ def create_workflow():
     workflow.add_edge("failure_analysis", "execution_layer")
     # Execution layer conditional routing
     workflow.add_conditional_edges(
-        "execution_layer",
-        route_after_execution,
-        {
-            "tools": "tools",
-            "end": END
-        }
+        "execution_layer", route_after_execution, {"tools": "tools", "end": END}
     )
     # Tools go back to end
     workflow.add_edge("tools", END)
@@ -69,7 +60,6 @@ if __name__ == "__main__":
     with open("./data/test_framework_fail.log") as f:
         sample_log = f.read()
 
-
     # sample_log = """
     # [2024-06-01 10:23:44] TESTCASE: test_login FAILED
     # Error: Timeout waiting for response
@@ -77,7 +67,6 @@ if __name__ == "__main__":
     # ------------------------------------------------
     # [2024-06-01 10:23:50] TESTCASE: test_signup PASSED
     # """
-
 
     # Run workflow
     initial_state = {
@@ -88,13 +77,13 @@ if __name__ == "__main__":
         "failure_report": None,
         "action_plan": None,
         "jira_tickets": None,
-        "messages": []
+        "messages": [],
     }
 
     result = app.invoke(initial_state)
 
-    if result.get('summary_report', ""):
+    if result.get("summary_report", ""):
         print(f"\nSummary report:\n{result['summary_report']}")
 
-    if result.get('jira_tickets', []):
+    if result.get("jira_tickets", []):
         print(f"\njira_tickets:\n{result['jira_tickets']}")

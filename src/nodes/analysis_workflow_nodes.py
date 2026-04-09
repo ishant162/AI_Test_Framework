@@ -1,6 +1,5 @@
 """Log Analysis Nodes Module"""
 
-
 import json
 from typing import Any
 
@@ -14,19 +13,19 @@ from src.tools.jira_tool import jira_tools
 
 llm = GenEngineLLM().get_llm_model()
 
+
 def framework_log_analysis(state: TestLogState) -> TestLogState:
     """Analyze test framework logs to determine pass/fail status"""
 
     prompt = f"""
     <LOG>
-        {state['log_content']}
+        {state["log_content"]}
     </LOG>
     """
 
     messages = [
-        SystemMessage(
-            content=log_analysis_system_prompt),
-        HumanMessage(content=prompt)
+        SystemMessage(content=log_analysis_system_prompt),
+        HumanMessage(content=prompt),
     ]
 
     response = llm.invoke(messages)
@@ -34,17 +33,17 @@ def framework_log_analysis(state: TestLogState) -> TestLogState:
     # Parse response to determine status
     response_text = response.content.lower()
     response_json = json.loads(response_text)
-    if response_json['overall_status'] == "all_passed":
+    if response_json["overall_status"] == "all_passed":
         status = "passed"
         failed_tests = []
     else:
         status = "failed"
         # Extract failed test cases (simplified parsing)
-        failed_tests = response_json.get('failed_tests')
+        failed_tests = response_json.get("failed_tests")
 
-    state['test_status'] = status
-    state['failed_testcases'] = failed_tests if failed_tests else None
-    state['messages'] = [{"role": "assistant", "content": response.content}]
+    state["test_status"] = status
+    state["failed_testcases"] = failed_tests if failed_tests else None
+    state["messages"] = [{"role": "assistant", "content": response.content}]
 
     return state
 
@@ -55,7 +54,7 @@ def pass_analysis(state: TestLogState) -> TestLogState:
     prompt = f"""All test cases have passed! Generate a concise summary report.
 
     Test Log:
-    {state['log_content']}
+    {state["log_content"]}
 
     Include:
     - Total number of tests
@@ -64,11 +63,11 @@ def pass_analysis(state: TestLogState) -> TestLogState:
 
     messages = [
         SystemMessage(content="You are generating a test execution summary report."),
-        HumanMessage(content=prompt)
+        HumanMessage(content=prompt),
     ]
 
     response = llm.invoke(messages)
-    state['summary_report'] = response.content
+    state["summary_report"] = response.content
 
     return state
 
@@ -79,10 +78,10 @@ def failure_analysis(state: TestLogState) -> TestLogState:
     prompt = f"""Analyze the failed test cases and generate a detailed failure report.
 
     Test Log:
-    {state['log_content']}
+    {state["log_content"]}
 
     Failed Test Cases:
-    {chr(10).join(state['failed_testcases']) if state['failed_testcases'] else 'None identified'}
+    {chr(10).join(state["failed_testcases"]) if state["failed_testcases"] else "None identified"}
 
     Include:
     - List of failed tests
@@ -91,12 +90,14 @@ def failure_analysis(state: TestLogState) -> TestLogState:
     - Potential root causes"""
 
     messages = [
-        SystemMessage(content="You are analyzing test failures and generating diagnostic reports."),
-        HumanMessage(content=prompt)
+        SystemMessage(
+            content="You are analyzing test failures and generating diagnostic reports."
+        ),
+        HumanMessage(content=prompt),
     ]
 
     response = llm.invoke(messages)
-    state['failure_report'] = response.content
+    state["failure_report"] = response.content
 
     return state
 
@@ -112,10 +113,10 @@ def execution_layer(state: TestLogState) -> TestLogState:
         testcases.
 
         Failed Test Cases:
-        {chr(10).join(state['failed_testcases']) if state.get('failed_testcases') else 'None'}
+        {chr(10).join(state["failed_testcases"]) if state.get("failed_testcases") else "None"}
 
         Failure Report:
-        {state.get('failure_report', '')}
+        {state.get("failure_report", "")}
 
         For each failed test, call the create_jira_ticket tool with:
         - summary: Brief issue summary
@@ -125,8 +126,9 @@ def execution_layer(state: TestLogState) -> TestLogState:
         Create tickets now.
     """
 
-
-    sys_msg = SystemMessage(content="You are creating Jira tickets for failed test cases. Use the create_jira_ticket tool for each failed test.")
+    sys_msg = SystemMessage(
+        content="You are creating Jira tickets for failed test cases. Use the create_jira_ticket tool for each failed test."
+    )
     human_msg = HumanMessage(content=prompt)
 
     prior = state.get("messages", []) or []
@@ -140,7 +142,7 @@ def execution_layer(state: TestLogState) -> TestLogState:
 
 def route_after_analysis(state: TestLogState) -> str:
     """Route to pass or fail analysis based on test status"""
-    if state['test_status'] == "passed":
+    if state["test_status"] == "passed":
         return "pass_analysis"
     else:
         return "failure_analysis"
@@ -170,13 +172,17 @@ def _safe_to_dict(content: Any) -> dict[str, Any]:
     # Fallback if something exotic comes back
     return {"raw": str(content)}
 
+
 def tools_and_capture(state: TestLogState) -> dict[str, Any]:
     update = tool_node.invoke(state)
 
     # 2) Capture outputs from ToolMessages that came back in this update
     jira_results: list[dict[str, Any]] = []
     for msg in update.get("messages", []):
-        if isinstance(msg, ToolMessage) and getattr(msg, "name", None) == "create_jira_ticket":
+        if (
+            isinstance(msg, ToolMessage)
+            and getattr(msg, "name", None) == "create_jira_ticket"
+        ):
             jira_results.append(_safe_to_dict(msg.content))
 
     # 3) If we found any, also return them as a state update

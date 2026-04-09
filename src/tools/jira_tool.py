@@ -1,8 +1,5 @@
 """Jira Tool Module"""
 
-
-import os
-
 from dotenv import load_dotenv
 from langchain_core.tools import tool
 
@@ -16,7 +13,9 @@ load_dotenv()
 
 
 @tool
-def create_jira_ticket(summary: str, description: str, testcase_name: str) -> dict[str, str]:
+def create_jira_ticket(
+    summary: str, description: str, testcase_name: str
+) -> dict[str, str]:
     """
     Create a Jira ticket for a failed test case.
 
@@ -42,7 +41,7 @@ def create_jira_ticket(summary: str, description: str, testcase_name: str) -> di
         "summary": summary,
         "description": description,
         "testcase": testcase_name,
-        "status": "created"
+        "status": "created",
     }
 
 

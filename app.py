@@ -1,6 +1,5 @@
 """Main Entry Module"""
 
-
 import re
 import traceback
 
@@ -29,9 +28,11 @@ PASSED_SAMPLE_LOG = """
 [2024-06-01 10:23:52] TESTCASE: test_profile_update PASSED
 """
 
+
 # ------------- HELPERS (unchanged) -------------
 def extract_failed_from_logs(log_text):
     return re.findall(r"TESTCASE:\s*(.*?)\s*FAILED", log_text)
+
 
 def format_jira_tickets(jira_list):
     if not jira_list:
@@ -64,15 +65,19 @@ def format_jira_tickets(jira_list):
 """
     return out
 
+
 # ---------------- LOADERS ----------------
 def load_sample():
     return SAMPLE_LOG
 
+
 def load_failed_sample():
     return FAILED_SAMPLE_LOG
 
+
 def load_passed_sample():
     return PASSED_SAMPLE_LOG
+
 
 # ------------ MAIN LOGIC (unchanged) ------------
 def analyze_logs(log_text: str):
@@ -97,8 +102,7 @@ def analyze_logs(log_text: str):
 
         if (not failed) and isinstance(result.get("per_test"), dict):
             failed = [
-                t for t, s in result["per_test"].items()
-                if "FAIL" in str(s).upper()
+                t for t, s in result["per_test"].items() if "FAIL" in str(s).upper()
             ]
 
         if not failed:
@@ -111,7 +115,9 @@ def analyze_logs(log_text: str):
         jira = result.get("jira_tickets") or []
 
         if failed:
-            failed_md = "### ❌ Failed Testcases\n" + "\n".join(f"- {t}" for t in failed)
+            failed_md = "### ❌ Failed Testcases\n" + "\n".join(
+                f"- {t}" for t in failed
+            )
         else:
             failed_md = "### ✔ No Failed Tests"
 
@@ -125,15 +131,14 @@ def analyze_logs(log_text: str):
         # Success Report (renamed from Summary Report)
         summary_md = (
             f"### ✅ Success Report\n{summary}"
-            if summary else
-            "### ✅ Success Report\n✔ No Success Report Generated"
+            if summary
+            else "### ✅ Success Report\n✔ No Success Report Generated"
         )
 
         failure_md = (
             f"### 🛑 Failure Report\n{failure}"
             if failure.strip()
-            else
-            "### 🛑 Failure Report\n✔ No Failure Report Generated"
+            else "### 🛑 Failure Report\n✔ No Failure Report Generated"
         )
 
         jira_md = format_jira_tickets(jira)
@@ -147,6 +152,7 @@ def analyze_logs(log_text: str):
             "",
             "",
         )
+
 
 # ---- Wrapper to support optional file input (kept minimal) ----
 def analyze_logs_from_inputs(log_text: str, log_file):
@@ -180,15 +186,19 @@ def analyze_logs_from_inputs(log_text: str, log_file):
             "",
         )
 
+
 # ------------------- UI -------------------
 with gr.Blocks() as demo:
-
     gr.Markdown("# 🧭 Test Log Analyzer")
 
     with gr.Group():
         log_input = gr.Textbox(label="Paste Test Logs", lines=6)
         # File attachment input
-        log_file = gr.File(label="Or upload a log file (.txt/.log)", file_types=[".txt", ".log"], type="binary")
+        log_file = gr.File(
+            label="Or upload a log file (.txt/.log)",
+            file_types=[".txt", ".log"],
+            type="binary",
+        )
 
         with gr.Row():
             run_btn = gr.Button("🚀 Generate Analysis", variant="primary")
@@ -217,15 +227,16 @@ with gr.Blocks() as demo:
         return gr.update(value=None)
 
     run_btn.click(disable_button, None, [run_btn]).then(
-        analyze_logs_from_inputs, [log_input, log_file],
-        [status_out, summary_out, failure_out, jira_msg_out]
-    ).then(
-        reset_file_input, None, [log_file]
-    ).then(
+        analyze_logs_from_inputs,
+        [log_input, log_file],
+        [status_out, summary_out, failure_out, jira_msg_out],
+    ).then(reset_file_input, None, [log_file]).then(
         enable_button, None, [run_btn]
     ).then(
         # NEW: Smoothly scroll to the analysis section after everything completes
-        None, None, None,
+        None,
+        None,
+        None,
         js="""
 () => {
   const el = document.getElementById('analysis_section');
@@ -233,7 +244,7 @@ with gr.Blocks() as demo:
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
-"""
+""",
     )
 
 demo.launch(server_name="localhost", server_port=7860, theme=gr.themes.Soft())

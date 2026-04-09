@@ -1,13 +1,13 @@
 # src/vectorstore/embedding_pipeline.py
 
-import uuid
-import numpy as np
 import os
-from dotenv import load_dotenv
-
-from sklearn.preprocessing import StandardScaler
+import uuid
 
 import chromadb
+import numpy as np
+from dotenv import load_dotenv
+from sklearn.preprocessing import StandardScaler
+
 from src.vectorstore.embedding_manager import EmbeddingManager
 
 
@@ -45,8 +45,7 @@ class EmbeddingPipeline:
 
         # Initialize embedding manager (Amazon Titan)
         self.embedder = EmbeddingManager(
-            api_key=self.api_key,
-            model_name="amazon.titan-embed-text-v2:0"
+            api_key=self.api_key, model_name="amazon.titan-embed-text-v2:0"
         )
 
         # Initialize Chroma persistent client
@@ -55,13 +54,12 @@ class EmbeddingPipeline:
         # Create or load the vector collection
         self.collection = self.client.get_or_create_collection(
             name="log_templates",
-            metadata={"description": "Semantic embeddings for log templates"}
+            metadata={"description": "Semantic embeddings for log templates"},
         )
 
         # Scaler used to normalize embedding vectors
         self.scaler = StandardScaler()
 
-    
     # EMBEDDING GENERATION
     def embed_templates(self, templates):
         """
@@ -78,7 +76,6 @@ class EmbeddingPipeline:
         vectors = self.embedder.generate_embeddings(texts)
         return np.array(vectors)
 
-    
     # VECTOR NORMALIZATION
     def normalize(self, vectors):
         """
@@ -93,7 +90,6 @@ class EmbeddingPipeline:
 
         return self.scaler.fit_transform(vectors)
 
-    
     # STORE VECTORS IN CHROMA
     def store_vectors(self, templates, vectors):
         """
@@ -117,19 +113,18 @@ class EmbeddingPipeline:
                 "template": t.get("template"),
                 "severity": t.get("severity"),
                 "summary": t.get("summary"),
-                "causality": t.get("causality")
+                "causality": t.get("causality"),
             }
 
             self.collection.add(
                 ids=[vector_id],
                 embeddings=[vectors[i].tolist()],
                 metadatas=[metadata],
-                documents=[t.get("template", "")]
+                documents=[t.get("template", "")],
             )
 
         return ids
 
-    
     # COMPLETE PIPELINE EXECUTION
     def run(self, templates):
         """
@@ -148,7 +143,4 @@ class EmbeddingPipeline:
         raw_vectors = self.embed_templates(templates)
         normalized_vectors = self.normalize(raw_vectors)
 
-        return self.store_vectors(
-            templates,
-            normalized_vectors
-        )
+        return self.store_vectors(templates, normalized_vectors)

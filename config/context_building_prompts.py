@@ -1,6 +1,5 @@
 """Context Building Prompt Module"""
 
-
 template_extraction_prompt = """
   You are an expert log analyst. Parse raw logs and extract unique structural templates.
     Return ONLY a JSON array in this exact structure, nothing else:
