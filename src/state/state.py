@@ -24,6 +24,9 @@ class TestLogState(TypedDict):
     action_plan: str | None
     jira_tickets: list[dict[str, str]] | None
 
+    # Memory
+    historical_context: str | None
+
     # Messages for LLM
     messages: Annotated[list[BaseMessage], add_messages]
 

@@ -12,7 +12,6 @@ from src.vectorstore.embedding_manager import EmbeddingManager
 
 class VectorRetriever:
     def __init__(self, api_key: str = None, collection_name="log_templates"):
-
         load_dotenv()
         self.api_key = api_key or os.getenv("API_KEY")
 
