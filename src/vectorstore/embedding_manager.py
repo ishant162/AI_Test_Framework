@@ -6,7 +6,6 @@ class EmbeddingManager:
     """Handles document embedding generation using Generative Engine API"""
 
     def __init__(self, api_key: str, model_name: str = "amazon.titan-embed-text-v2:0"):
-
         self.model_name = model_name
         self.api_key = api_key
         self.client = None
@@ -27,7 +26,6 @@ class EmbeddingManager:
             raise
 
     def generate_embeddings(self, texts: list[str]) -> np.ndarray:
-
         if not self.client:
             raise ValueError("Client not initialized")
 

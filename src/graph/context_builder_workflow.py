@@ -122,7 +122,7 @@ if __name__ == "__main__":
     initial_state = {
         "log_content": sample_logs,
         "parsing_guidance": "",
-        "sme_excel_path": None,
+        "sme_excel_path": "",
         "extracted_templates": None,
         "review_approved": False,
         "messages": [],
@@ -134,4 +134,22 @@ if __name__ == "__main__":
         app=app, thread_id="context_build_001", initial_state=initial_state
     )
 
+    def display_context_builder_state(state: dict):
+        print("\n=== ContextBuilderState ===")
+        for key, value in state.items():
+            print(f"\n▶ {key}")
+            print("-" * (len(key) + 4))
+
+            if isinstance(value, list):
+                for idx, item in enumerate(value):
+                    print()
+                    print(f"  [{idx}] {item}")
+                    print()
+            else:
+                print()
+                print(f"  {value}")
+                print()
+
+    # Usage
+    display_context_builder_state(final_result)
     print("Workflow Executed")

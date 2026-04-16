@@ -24,7 +24,9 @@ template_extraction_prompt = """
 
 template_enrichment_prompt = """
   You are a Domain Expert Log Annotator. You will receive a list of extracted log templates and must enrich
-  each one with semantic metadata.
+  each one with semantic metadata. You must ALSO convert every SME template found inside
+  sme_reference_text into the same enriched JSON object format and include them
+  in the final output list.
 
   ### SME REFERENCE KNOWLEDGE (The "Teacher"):
   Use the following SME-curated data as your primary guide for labeling.
@@ -43,7 +45,8 @@ template_enrichment_prompt = """
   Rules:
   - Return ALL original fields unchanged ("template", "timestamps").
   - Only ADD the four new fields above to each object.
-  - Base severity and causality strictly on the template content, not the timestamps.
+  - Base severity and causality strictly on template meaning (not timestamps).
+  - SME-derived templates must include "template", "values": [], "context": null.
 
   Input format:
   [
@@ -64,4 +67,51 @@ template_enrichment_prompt = """
   ]
 
   Return the enriched JSON list with all 7 keys per object: "template", "values", "context", "severity", "causality", "summary", "source".
+"""
+
+
+augmentation_prompt = """
+  You are an expert Log Data Augmentor. Your task is to generate synthetic, yet realistic, variations of provided log templates.
+  This is crucial for expanding the knowledge base and improving the robustness of log analysis.
+
+  ### Input:
+  You will receive a JSON array of enriched log templates, each containing 'template', 'values', 'context', 'severity',
+  'causality', 'summary', and 'source'.
+
+  ### Task:
+  For each provided template, generate 3-5 new, distinct synthetic log entries. These new entries should:
+  1.  **Vary the 'values'**: Replace the placeholders in the 'template' with diverse, plausible data. For example,
+  if a template has <USER_ID>, generate different user IDs.
+  2.  **Vary the 'context'**: Create new 'before', 'match', and 'after' lines that realistically surround the synthetic log entry.
+  This can include different timestamps, preceding/succeeding log messages, or related system events.
+  3.  **Inject External Knowledge (if applicable)**: If the template suggests a common error, security event,
+  or system behavior, subtly inject relevant external knowledge (e.g., common HTTP status codes, specific error messages from
+  known systems like AWS, Azure, or common security vulnerability names like CVE-XXXX-XXXXX) into the synthetic log or its context.
+
+  ### Output:
+  Return ONLY a JSON array of the **augmented log templates**. Each object in the array should maintain the original structure but
+  with updated 'values' and 'context' fields reflecting the synthetic data. Ensure the 'source' field for augmented data is set
+  to "AI Augmented".
+
+  Example of an augmented entry:
+  [
+    {
+      "template": "User <USER_ID> logged in from <IP_ADDRESS> at <TIMESTAMP>",
+      "values": [
+        { "USER_ID": "u_003", "IP_ADDRESS": "192.168.1.10", "TIMESTAMP": "2024-01-01T12:00:00" },
+        { "USER_ID": "u_004", "IP_ADDRESS": "172.16.0.5", "TIMESTAMP": "2024-01-01T13:00:00" }
+      ],
+      "context": {
+        "before": ["[INFO] Starting authentication service", "[DEBUG] User u_003 attempting login"],
+        "match": "User u_003 logged in from 192.168.1.10 at 2024-01-01T12:00:00",
+        "after": ["[INFO] Session created for u_003", "[DEBUG] Redirecting to dashboard"]
+      },
+      "severity": "INFO",
+      "causality": "Auth",
+      "summary": "Successful user login event.",
+      "source": "AI Augmented"
+    }
+  ]
+
+  Ensure the output is a valid JSON array of augmented template objects.
 """

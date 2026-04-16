@@ -8,6 +8,7 @@ import pandas as pd
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from config.context_building_prompts import (
+    augmentation_prompt,
     template_enrichment_prompt,
     template_extraction_prompt,
 )
@@ -115,10 +116,44 @@ class ContextWorkflowNode:
         return state
 
     def augmentation_node(self, state: ContextBuilderState) -> ContextBuilderState:
-        """Phase 02: LLM-based augmentation and domain knowledge injection (Placeholder)"""
+        """Phase 02: LLM-based augmentation with Faker-enhanced realism"""
 
-        # TODO: To be implemented in Phase 2
-        state["messages"].append("Phase 02: Augmentation started (Placeholder).")
+        if not state.get("extracted_templates"):
+            state["messages"].append(
+                "Augmentation skipped: no extracted templates found."
+            )
+            return state
+
+        state["messages"].append("Phase 02: Augmentation started..")
+
+        augmentation_user_prompt = (
+            f"Here are the enriched log templates to augment:\n\n"
+            f"{json.dumps(state['extracted_templates'], indent=2)}"
+        )
+
+        # 1. LLM generates the structural variations and domain-specific context
+        response = self.llm.invoke(
+            [
+                SystemMessage(content=augmentation_prompt),
+                HumanMessage(content=augmentation_user_prompt),
+            ]
+        )
+
+        augmented_templates = extract_and_parse_json(response.content)
+
+        if augmented_templates and isinstance(augmented_templates, list):
+            # Combine original and augmented data
+            state["augmented_data"] = state["extracted_templates"] + augmented_templates
+            state["messages"].append(
+                f"Augmentation successfully generated {len(augmented_templates)} "
+                " synthetic templates."
+            )
+        else:
+            state["augmented_data"] = state["extracted_templates"]
+            state["messages"].append(
+                "Augmentation failed to generate synthetic templates. Using original data."
+            )
+
         return state
 
     def vectorization_node(self, state: ContextBuilderState) -> ContextBuilderState:
