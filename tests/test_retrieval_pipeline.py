@@ -22,6 +22,9 @@ def test_retrieval_pipeline():
 
     # Query used to test semantic retrieval
     query = "connection timeout issue"
+    # query = "block firewall"
+
+    # frequency check failed
     print(f'Running retrieval for query:\n"{query}"\n')
 
     result = retriever.retrieve(query=query, top_k=3)

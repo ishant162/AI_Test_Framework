@@ -1,108 +1,107 @@
-# src/vectorstore/embedding_pipeline.py
-
 import os
 import uuid
 
 import chromadb
 import numpy as np
 from dotenv import load_dotenv
-from sklearn.preprocessing import StandardScaler
 
 from src.vectorstore.embedding_manager import EmbeddingManager
 
 
 class EmbeddingPipeline:
     """
-    Embedding Pipeline (Simplified):
+    Orchestrates the end-to-end embedding workflow for log templates.
 
-    Steps performed by this pipeline:
-    1. Generate embeddings for log templates using Amazon Titan
-    2. Normalize embeddings for numerical stability
-    3. Store embeddings and metadata in ChromaDB
-
-    Note:
-    - Anomaly detection will be implemented in next phase
-    - Clustering will be implemented in next phase
-    - This version focuses purely on clean vector storage for retrieval
+    This pipeline is responsible for:
+    - Generating embeddings for log templates
+    - Normalizing vectors for cosine similarity
+    - Persisting embeddings and metadata into ChromaDB
     """
 
     def __init__(self, api_key: str = None):
         """
-        Initialize the embedding pipeline.
+        Initialize the embedding pipeline and required dependencies.
 
-        - Loads API key
-        - Initializes embedding model
-        - Connects to ChromaDB persistent storage
+        This includes loading environment variables, initializing the
+        embedding manager, and setting up the ChromaDB persistent collection.
+
+        Args:
+            api_key (str, optional): API key for embedding generation.
+                                     If not provided, it is read from the environment.
         """
-
-        # Load environment variables from .env
         load_dotenv()
 
-        # Read API key from argument or environment
         self.api_key = api_key or os.getenv("API_KEY")
         if not self.api_key:
             raise ValueError("API_KEY missing. Add it to .env or pass explicitly.")
 
-        # Initialize embedding manager (Amazon Titan)
+        print("[EmbeddingPipeline] Initializing embedding pipeline...")
+
         self.embedder = EmbeddingManager(
             api_key=self.api_key, model_name="amazon.titan-embed-text-v2:0"
         )
 
-        # Initialize Chroma persistent client
         self.client = chromadb.PersistentClient(path="./log_embeddings")
 
-        # Create or load the vector collection
+        # cosine space
         self.collection = self.client.get_or_create_collection(
             name="log_templates",
-            metadata={"description": "Semantic embeddings for log templates"},
+            metadata={
+                "description": "Semantic embeddings for log templates",
+                "hnsw:space": "cosine",
+            },
         )
 
-        # Scaler used to normalize embedding vectors
-        self.scaler = StandardScaler()
+        print("[EmbeddingPipeline] Pipeline initialized successfully.")
 
-    # EMBEDDING GENERATION
     def embed_templates(self, templates):
         """
-        Generate embeddings for all log templates.
+        Generate raw embedding vectors for a list of log templates.
 
         Args:
-            templates (list): List of template dictionaries
+            templates (list): List of template dictionaries containing log text.
 
         Returns:
-            np.ndarray: Array of embedding vectors
+            np.ndarray: Array of raw embedding vectors.
         """
-
+        print("[EmbeddingPipeline] Generating embeddings...")
         texts = [t["template"] for t in templates]
         vectors = self.embedder.generate_embeddings(texts)
-        return np.array(vectors)
+        return np.asarray(vectors, dtype=np.float32)
 
-    # VECTOR NORMALIZATION
-    def normalize(self, vectors):
+    def normalize(self, vectors: np.ndarray) -> np.ndarray:
         """
-        Normalize embeddings to improve numerical consistency.
+        Apply L2 normalization to embedding vectors.
+
+        This normalization ensures vectors are suitable for cosine similarity
+        during retrieval and comparison.
 
         Args:
-            vectors (np.ndarray): Raw embedding vectors
+            vectors (np.ndarray): Raw embedding vectors.
 
         Returns:
-            np.ndarray: Normalized vectors
+            np.ndarray: L2-normalized embedding vectors.
         """
+        print("[EmbeddingPipeline] L2-normalizing embeddings...")
+        norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        return vectors / norms
 
-        return self.scaler.fit_transform(vectors)
-
-    # STORE VECTORS IN CHROMA
     def store_vectors(self, templates, vectors):
         """
-        Store embeddings along with metadata in ChromaDB.
+        Store normalized embeddings and associated metadata in ChromaDB.
+
+        Each template is stored with a unique identifier along with
+        relevant metadata fields for downstream retrieval.
 
         Args:
-            templates (list): Original template records
-            vectors (np.ndarray): Embedding vectors
+            templates (list): List of original template records.
+            vectors (np.ndarray): Normalized embedding vectors.
 
         Returns:
-            list: List of stored vector IDs
+            list: List of generated vector IDs.
         """
-
+        print("[EmbeddingPipeline] Storing vectors in ChromaDB...")
         ids = []
 
         for i, t in enumerate(templates):
@@ -123,24 +122,27 @@ class EmbeddingPipeline:
                 documents=[t.get("template", "")],
             )
 
+        print(f"[EmbeddingPipeline] Stored {len(ids)} vectors.")
         return ids
 
-    # COMPLETE PIPELINE EXECUTION
     def run(self, templates):
         """
-        Run the complete embedding pipeline:
-        - Embed templates
-        - Normalize vectors
-        - Store results in ChromaDB
+        Execute the complete embedding pipeline.
+
+        This method performs embedding generation, normalization,
+        and persistence in a single flow.
 
         Args:
-            templates (list): List of log templates
+            templates (list): List of log template records.
 
         Returns:
-            list: Stored vector IDs
+            list: List of stored vector IDs.
         """
+        print("[EmbeddingPipeline] Running full embedding pipeline...")
 
         raw_vectors = self.embed_templates(templates)
         normalized_vectors = self.normalize(raw_vectors)
+        ids = self.store_vectors(templates, normalized_vectors)
 
-        return self.store_vectors(templates, normalized_vectors)
+        print("[EmbeddingPipeline] Pipeline complete.")
+        return ids
