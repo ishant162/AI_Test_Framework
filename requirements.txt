@@ -12,11 +12,8 @@ sentence-transformers
 chromadb
 regex
 ruff
-
-# ML / Vector Processing
+openpyxl
 numpy
 scikit-learn
-
-# New: Required for Improved Pipeline
 hdbscan
-numba  # optional but recommended for HDBSCAN performance
+numba
