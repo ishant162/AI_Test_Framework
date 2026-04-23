@@ -1,4 +1,4 @@
-from typing import list
+"""Embedding Manager Module"""
 
 import numpy as np
 from openai import OpenAI

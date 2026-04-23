@@ -1,5 +1,6 @@
+"""Vector Retrieval Module"""
+
 import os
-from typing import Any, dict
 
 import chromadb
 import numpy as np

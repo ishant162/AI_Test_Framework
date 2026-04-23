@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 from typing import Any
 
 import pandas as pd
@@ -15,12 +16,13 @@ from config.context_building_prompts import (
 from src.llm.gen_engine_llm import GenEngineLLM
 from src.state.state import ContextBuilderState
 from src.utils.utils import extract_and_parse_json
+from src.vectorstore.embedding_pipeline import EmbeddingPipeline
 
 
 class ContextWorkflowNode:
     """Context Workflow node for building context from scratch"""
 
-    def __init__(self, model=None):
+    def __init__(self):
         self.llm = GenEngineLLM().get_llm_model()
 
     # LLM Log Parsing Node
@@ -125,28 +127,51 @@ class ContextWorkflowNode:
             return state
 
         state["messages"].append("Phase 02: Augmentation started..")
+        templates = state["extracted_templates"]
 
-        augmentation_user_prompt = (
-            f"Here are the enriched log templates to augment:\n\n"
-            f"{json.dumps(state['extracted_templates'], indent=2)}"
+        # Batch Processing
+        batch_size = (
+            3  # Smaller batch size for augmentation as it generates more tokens
         )
+        augmented_all = []
 
-        # 1. LLM generates the structural variations and domain-specific context
-        response = self.llm.invoke(
-            [
-                SystemMessage(content=augmentation_prompt),
-                HumanMessage(content=augmentation_user_prompt),
-            ]
-        )
+        for i in range(0, len(templates), batch_size):
+            batch = templates[i : i + batch_size]
+            prompt = f"Augment these templates:\n\n{json.dumps(batch, indent=2)}"
 
-        augmented_templates = extract_and_parse_json(response.content)
-
-        if augmented_templates and isinstance(augmented_templates, list):
-            # Combine original and augmented data
-            state["augmented_data"] = state["extracted_templates"] + augmented_templates
+            # Retry Mechanism with Exponential Backoff
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = self.llm.invoke(
+                        [
+                            SystemMessage(content=augmentation_prompt),
+                            HumanMessage(content=prompt),
+                        ]
+                    )
+                    augmented_batch = extract_and_parse_json(response.content)
+                    if augmented_batch and isinstance(augmented_batch, list):
+                        augmented_all.extend(augmented_batch)
+                        break
+                    else:
+                        raise ValueError("Invalid JSON response")
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        wait_time = 2**attempt
+                        state["messages"].append(
+                            f"Augmentation Retry "
+                            f"{attempt + 1}/{max_retries} after {wait_time}s: {str(e)}"
+                        )
+                        time.sleep(wait_time)
+                    else:
+                        state["messages"].append(
+                            f"Augmentation Batch "
+                            f"{i // batch_size + 1} failed after {max_retries} attempts."
+                        )
+        if augmented_all:
+            state["augmented_data"] = state["extracted_templates"] + augmented_all
             state["messages"].append(
-                f"Augmentation successfully generated {len(augmented_templates)} "
-                " synthetic templates."
+                f"Augmentation successfully generated {len(augmented_all)} synthetic templates."
             )
         else:
             state["augmented_data"] = state["extracted_templates"]
@@ -158,8 +183,6 @@ class ContextWorkflowNode:
 
     def vectorization_node(self, state: ContextBuilderState) -> ContextBuilderState:
         """Phase 03: Embedding, anomaly detection, clustering, vector storage"""
-
-        from src.vectorstore.embedding_pipeline import EmbeddingPipeline
 
         templates = (
             state.get("augmented_data") or state.get("extracted_templates") or []

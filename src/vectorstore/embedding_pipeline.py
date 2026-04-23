@@ -1,3 +1,5 @@
+"""Embedding Pipeline Module"""
+
 import os
 import uuid
 
