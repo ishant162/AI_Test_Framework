@@ -15,7 +15,6 @@ class EmbeddingManager:
     - Generating embeddings for each chunk
     - Aggregating chunk-level embeddings into a single vector per input text
     """
-
     def __init__(
         self,
         api_key: str,
@@ -110,6 +109,8 @@ class EmbeddingManager:
         Returns:
             np.ndarray: Array of embedding vectors, one per input text.
         """
+        if not self.client:
+            raise ValueError("Client not initialized")
         if not texts:
             print("[EmbeddingManager] No texts provided. Returning empty embeddings.")
             return np.empty((0, 384), dtype=np.float32)

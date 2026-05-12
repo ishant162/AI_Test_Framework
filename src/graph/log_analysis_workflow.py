@@ -1,6 +1,10 @@
 """Log Analysis Workflow Module"""
 
+import sqlite3
+
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
+from langgraph.store.memory import InMemoryStore
 
 from src.nodes.analysis_workflow_nodes import (
     execution_layer,
@@ -11,43 +15,79 @@ from src.nodes.analysis_workflow_nodes import (
     route_after_execution,
     tools_and_capture,
 )
+
+# New nodes for memory implementation
+from src.nodes.memory_nodes import (
+    commit_to_memory,
+    retrieve_historical_context,
+)
 from src.state.state import TestLogState
+
+# Initialize SQLite checkpointer for Long-Term Memory (History)
+conn = sqlite3.connect("memory.db", check_same_thread=False)
+memory_saver = SqliteSaver(conn)
+
+# Initialize Global Knowledge Store (InMemoryStore)
+global_store = InMemoryStore()
 
 
 def create_workflow():
-    """Create and compile the LangGraph workflow"""
+    """Create and compile the LangGraph workflow with memory layers."""
 
-    # Initialize graph
+    # Initialize graph with state schema
     workflow = StateGraph(TestLogState)
 
     # Add nodes
     workflow.add_node("framework_log_analysis", framework_log_analysis)
     workflow.add_node("pass_analysis", pass_analysis)
+
+    # Memory retrieval node
+    workflow.add_node("retrieve_historical_context", retrieve_historical_context)
+
     workflow.add_node("failure_analysis", failure_analysis)
     workflow.add_node("execution_layer", execution_layer)
     workflow.add_node("tools", tools_and_capture)
 
+    # Memory commit node (after analysis/action)
+    workflow.add_node("commit_to_memory", commit_to_memory)
+
     # Set entry point
     workflow.set_entry_point("framework_log_analysis")
+
     # Add conditional edges
     workflow.add_conditional_edges(
         "framework_log_analysis",
         route_after_analysis,
-        {"pass_analysis": "pass_analysis", "failure_analysis": "failure_analysis"},
+        {
+            "pass_analysis": "pass_analysis",
+            "failure_analysis": "retrieve_historical_context",  # Route to retrieval before analysis
+        },
     )
+
+    # Retrieval flows into failure analysis
+    workflow.add_edge("retrieve_historical_context", "failure_analysis")
+
     # Pass analysis goes to end
     workflow.add_edge("pass_analysis", END)
+
     # Failure analysis goes to execution layer
     workflow.add_edge("failure_analysis", "execution_layer")
+
     # Execution layer conditional routing
     workflow.add_conditional_edges(
-        "execution_layer", route_after_execution, {"tools": "tools", "end": END}
+        "execution_layer",
+        route_after_execution,
+        {"tools": "tools", "end": "commit_to_memory"},  # Commit to memory before ending
     )
-    # Tools go back to end
-    workflow.add_edge("tools", END)
 
-    # Compile
-    app = workflow.compile()
+    # Tools go back to end (via commit_to_memory)
+    workflow.add_edge("tools", "commit_to_memory")
+
+    # Final step: Commit to memory and then end
+    workflow.add_edge("commit_to_memory", END)
+
+    # Compile with memory saver (Long-Term Memory) and global store
+    app = workflow.compile(checkpointer=memory_saver, store=global_store)
 
     return app
 
@@ -55,6 +95,12 @@ def create_workflow():
 if __name__ == "__main__":
     # Example usage
     app = create_workflow()
+
+    config = {"configurable": {"thread_id": "project_alpha"}}
+
+    # Sample run
+    # initial_state = {"log_content": "..."}
+    # result = app.invoke(initial_state, config=config)
 
     # Sample test log
     with open("./data/test_framework_fail.log") as f:
