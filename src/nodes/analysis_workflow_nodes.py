@@ -33,7 +33,11 @@ def framework_log_analysis(state: TestLogState) -> TestLogState:
     # Parse response to determine status
     try:
         response_json = json.loads(response.content)
-        status = "passed" if response_json.get("overall_status") == "ALL_PASSED" else "failed"
+        status = (
+            "passed"
+            if response_json.get("overall_status") == "ALL_PASSED"
+            else "failed"
+        )
         failed_tests = response_json.get("failed_tests")
     except Exception:
         status = "failed"
@@ -41,7 +45,7 @@ def framework_log_analysis(state: TestLogState) -> TestLogState:
 
     state["test_status"] = status
     state["failed_testcases"] = failed_tests if failed_tests else None
-    
+
     # Update messages for short-term history
     state["messages"] = [AIMessage(content=response.content)]
 
@@ -115,7 +119,7 @@ def execution_layer(state: TestLogState) -> TestLogState:
 
     prompt = f"""
         Based on the following failed tests and analysis, create Jira tickets.
-        
+
         Failed Test Cases:
         {chr(10).join(state["failed_testcases"]) if state.get("failed_testcases") else "None"}
 

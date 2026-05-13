@@ -15,6 +15,7 @@ class EmbeddingManager:
     - Generating embeddings for each chunk
     - Aggregating chunk-level embeddings into a single vector per input text
     """
+
     def __init__(
         self,
         api_key: str,

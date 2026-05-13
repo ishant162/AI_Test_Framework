@@ -1,6 +1,7 @@
 """Log Analysis Workflow Module"""
 
 import sqlite3
+
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 from langgraph.store.memory import InMemoryStore
@@ -27,6 +28,7 @@ memory_saver = SqliteSaver(conn)
 # Initialize Global Knowledge Store (Long-Term Cross-Thread Memory)
 global_store = InMemoryStore()
 
+
 def create_workflow():
     """Create and compile the LangGraph workflow with full memory integration."""
 
@@ -36,7 +38,7 @@ def create_workflow():
     workflow.add_node("framework_log_analysis", framework_log_analysis)
     workflow.add_node("pass_analysis", pass_analysis)
     workflow.add_node("failure_analysis", failure_analysis)
-    
+
     # Tool & Execution Nodes
     workflow.add_node("execution_layer", execution_layer)
     workflow.add_node("tools", tools_and_capture)
@@ -65,15 +67,12 @@ def create_workflow():
     workflow.add_conditional_edges(
         "execution_layer",
         route_after_execution,
-        {
-            "tools": "tools", 
-            "end": "commit_to_memory"
-        },
+        {"tools": "tools", "end": "commit_to_memory"},
     )
 
     # Tool execution results back to memory commit
     workflow.add_edge("tools", "commit_to_memory")
-    
+
     # Pass analysis directly to memory commit
     workflow.add_edge("pass_analysis", "commit_to_memory")
 
@@ -85,16 +84,14 @@ def create_workflow():
 
     return app
 
+
 if __name__ == "__main__":
     app = create_workflow()
-    
+
     # Thread ID enables short-term checkpointed memory
     config = {"configurable": {"thread_id": "test_session_001"}}
-    
-    initial_state = {
-        "log_content": "Sample log data...",
-        "messages": []
-    }
-    
+
+    initial_state = {"log_content": "Sample log data...", "messages": []}
+
     # Workflow invocation with memory config
     # result = app.invoke(initial_state, config=config)

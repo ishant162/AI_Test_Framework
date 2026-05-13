@@ -6,7 +6,7 @@ Deduplicate aggressively by template structure.
 Structure: [{"template": "...", "values": [{"VAR": "val"}], "context": {"before": [], "match": "", "after": []}}]"""
 
 
-template_enrichment_prompt = """Enrich log templates with metadata. 
+template_enrichment_prompt = """Enrich log templates with metadata.
 Also convert all SME entries in {sme_reference_text} into this format and include them in the output.
 
 For each object, ADD:
