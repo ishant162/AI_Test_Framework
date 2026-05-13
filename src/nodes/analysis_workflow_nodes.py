@@ -31,19 +31,19 @@ def framework_log_analysis(state: TestLogState) -> TestLogState:
     response = llm.invoke(messages)
 
     # Parse response to determine status
-    response_text = response.content.lower()
-    response_json = json.loads(response_text)
-    if response_json["overall_status"] == "all_passed":
-        status = "passed"
-        failed_tests = []
-    else:
-        status = "failed"
-        # Extract failed test cases (simplified parsing)
+    try:
+        response_json = json.loads(response.content)
+        status = "passed" if response_json.get("overall_status") == "ALL_PASSED" else "failed"
         failed_tests = response_json.get("failed_tests")
+    except Exception:
+        status = "failed"
+        failed_tests = []
 
     state["test_status"] = status
     state["failed_testcases"] = failed_tests if failed_tests else None
-    state["messages"] = [{"role": "assistant", "content": response.content}]
+    
+    # Update messages for short-term history
+    state["messages"] = [AIMessage(content=response.content)]
 
     return state
 
@@ -68,14 +68,19 @@ def pass_analysis(state: TestLogState) -> TestLogState:
 
     response = llm.invoke(messages)
     state["summary_report"] = response.content
+    state["messages"] = [AIMessage(content=response.content)]
 
     return state
 
 
 def failure_analysis(state: TestLogState) -> TestLogState:
-    """Generate failure analysis report"""
+    """Generate failure analysis report with historical context (Long-term memory)"""
 
-    prompt = f"""Analyze the failed test cases and generate a detailed failure report.
+    context_prompt = ""
+    if state.get("historical_context"):
+        context_prompt = f"\n\nUSE THIS HISTORICAL CONTEXT FROM PAST FAILURES TO ASSIST YOUR ANALYSIS:\n{state['historical_context']}"
+
+    prompt = f"""Analyze the failed test cases and generate a detailed failure report.{context_prompt}
 
     Test Log:
     {state["log_content"]}
@@ -87,7 +92,7 @@ def failure_analysis(state: TestLogState) -> TestLogState:
     - List of failed tests
     - Failure reasons
     - Error messages
-    - Potential root causes"""
+    - Potential root causes (leveraging historical context if relevant)"""
 
     messages = [
         SystemMessage(
@@ -98,32 +103,26 @@ def failure_analysis(state: TestLogState) -> TestLogState:
 
     response = llm.invoke(messages)
     state["failure_report"] = response.content
+    state["messages"] = [AIMessage(content=response.content)]
 
     return state
 
 
 def execution_layer(state: TestLogState) -> TestLogState:
-    """Plan actions and use tools to create Jira tickets"""
+    """Plan actions and use tools to create Jira tickets with conversation context"""
 
     llm_with_tools = llm.bind_tools(jira_tools)
 
     prompt = f"""
-        Based on the following failed tests, create Jira tickets for each failure.
-        Use the available create_jira_ticket TOOLS to create jira tickets for failed
-        testcases.
-
+        Based on the following failed tests and analysis, create Jira tickets.
+        
         Failed Test Cases:
         {chr(10).join(state["failed_testcases"]) if state.get("failed_testcases") else "None"}
 
         Failure Report:
         {state.get("failure_report", "")}
 
-        For each failed test, call the create_jira_ticket tool with:
-        - summary: Brief issue summary
-        - description: Detailed failure description
-        - testcase_name: The test case name
-
-        Create tickets now.
+        For each failed test, call the create_jira_ticket tool.
     """
 
     sys_msg = SystemMessage(
@@ -131,11 +130,11 @@ def execution_layer(state: TestLogState) -> TestLogState:
     )
     human_msg = HumanMessage(content=prompt)
 
-    prior = state.get("messages", []) or []
-    response = llm_with_tools.invoke(prior + [sys_msg, human_msg])
+    # Use existing message history for short-term context
+    history = state.get("messages", [])
+    response = llm_with_tools.invoke([sys_msg] + history + [human_msg])
 
-    # Explicitly set messages as BaseMessage objects (not dicts)
-    state["messages"] = prior + [sys_msg, human_msg, response]
+    state["messages"] = [response]
     state["action_plan"] = getattr(response, "content", str(response))
     return state
 
@@ -150,6 +149,8 @@ def route_after_analysis(state: TestLogState) -> str:
 
 def route_after_execution(state: TestLogState) -> str:
     """Check if tools need to be called"""
+    if not state["messages"]:
+        return "end"
     last = state["messages"][-1]
     if isinstance(last, AIMessage) and getattr(last, "tool_calls", None):
         return "tools"
@@ -169,14 +170,12 @@ def _safe_to_dict(content: Any) -> dict[str, Any]:
             return json.loads(content)
         except Exception:
             return {"raw": content}
-    # Fallback if something exotic comes back
     return {"raw": str(content)}
 
 
 def tools_and_capture(state: TestLogState) -> dict[str, Any]:
     update = tool_node.invoke(state)
 
-    # 2) Capture outputs from ToolMessages that came back in this update
     jira_results: list[dict[str, Any]] = []
     for msg in update.get("messages", []):
         if (
@@ -185,7 +184,6 @@ def tools_and_capture(state: TestLogState) -> dict[str, Any]:
         ):
             jira_results.append(_safe_to_dict(msg.content))
 
-    # 3) If we found any, also return them as a state update
     if jira_results:
         update["jira_tickets"] = jira_results
 
