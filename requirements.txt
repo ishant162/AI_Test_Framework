@@ -17,3 +17,5 @@ numpy
 scikit-learn
 hdbscan
 numba
+
+langgraph-checkpoint-sqlite

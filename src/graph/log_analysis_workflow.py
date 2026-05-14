@@ -53,10 +53,10 @@ def create_workflow():
         },
     )
 
-    # Pass Path: Analysis -> Commit -> End
+    # Pass Path
     workflow.add_edge("pass_analysis", "commit_to_memory")
 
-    # Fail Path: Retrieval -> Analysis -> Execution -> (Tools) -> Commit -> End
+    # Fail Path
     workflow.add_edge("retrieve_historical_context", "failure_analysis")
     workflow.add_edge("failure_analysis", "execution_layer")
 
@@ -101,7 +101,5 @@ if __name__ == "__main__":
     print("\n[Status]:", result.get("test_status"))
     if result.get("failure_report"):
         print("\n[Failure Report]:\n", result["failure_report"])
-    if result.get("jira_tickets"):
-        print("\n[Jira Tickets]:", result["jira_tickets"])
     
     print("\n--- Workflow Execution Complete ---")

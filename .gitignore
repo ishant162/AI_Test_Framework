@@ -6,4 +6,5 @@ node_modules/
 venv/
 .vscode
 .ruff_cache
-.log_embeddings/
+log_embeddings
+memory.db
